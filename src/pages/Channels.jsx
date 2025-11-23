@@ -1,0 +1,235 @@
+// src/pages/Channels.jsx
+import { useEffect, useState } from "react";
+import { API } from "../api";
+import DashboardLayout from "../layouts/DashboardLayout";
+import { useNavigate } from "react-router-dom";
+
+export default function Channels() {
+  const [channels, setChannels] = useState([]);
+  const [name, setName] = useState("");
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const navigate = useNavigate();
+
+  const loadChannels = () => {
+    API.get("/channel").then((res) => {
+      if (res.data.success) setChannels(res.data.channels);
+    });
+  };
+
+  useEffect(() => {
+    loadChannels();
+  }, []);
+
+  const createChannel = async () => {
+    if (!name.trim()) return alert("Channel name is required");
+
+    if (!/^[a-zA-Z0-9-_]+$/.test(name.trim()))
+      return alert("Channel name can only contain letters, numbers, - and _");
+
+    const res = await API.post("/channel/create", {
+      name,
+      title,
+      description: desc,
+    });
+
+    if (res.data.success) {
+      alert("Channel created successfully!");
+      setName("");
+      setTitle("");
+      setDesc("");
+      loadChannels();
+    } else {
+      alert(res.data.message || "Create failed");
+    }
+  };
+
+  return (
+    <DashboardLayout>
+      <div
+        style={{
+          maxWidth: 900,
+          margin: "0 auto",
+          padding: "25px 20px",
+          color: "#c9d1d9",
+          fontFamily: "Poppins",
+        }}
+      >
+        {/* PAGE TITLE */}
+        <h1
+          style={{
+            marginBottom: 20,
+            fontSize: 28,
+            fontWeight: 600,
+            color: "#c9d1d9",
+          }}
+        >
+          Channels
+        </h1>
+
+        {/* CREATE CHANNEL */}
+        <div
+          style={{
+            padding: 18,
+            borderRadius: 10,
+            background: "#161b22",
+            border: "1px solid #30363d",
+            marginBottom: 30,
+            boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+          }}
+        >
+          <h3
+            style={{
+              fontSize: 20,
+              marginBottom: 10,
+              color: "#c9d1d9",
+            }}
+          >
+            Create a Channel
+          </h3>
+
+          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+            <input
+              placeholder="channel-name (no spaces)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+
+            <input
+              placeholder="Title (optional)"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+          </div>
+
+          <textarea
+            placeholder="Channel description..."
+            rows={3}
+            value={desc}
+            onChange={(e) => setDesc(e.target.value)}
+            style={{
+              ...inputStyle,
+              width: "100%",
+              height: 90,
+              marginTop: 12,
+              resize: "none",
+            }}
+          />
+
+          <button onClick={createChannel} style={createBtn}>
+            Create Channel
+          </button>
+        </div>
+
+        {/* CHANNEL LIST */}
+        <h3
+          style={{
+            marginBottom: 15,
+            fontSize: 20,
+            fontWeight: 600,
+            color: "#c9d1d9",
+          }}
+        >
+          Available Channels
+        </h3>
+
+        {channels.length === 0 && (
+          <p style={{ color: "#8b949e" }}>No channels created yet.</p>
+        )}
+
+        <div style={{ display: "grid", gap: 12 }}>
+          {channels.map((c) => (
+            <div
+              key={c._id}
+              style={channelCard}
+              onClick={() => navigate(`/channel/${c._id}`)}
+            >
+              <div style={{ flex: 1 }}>
+                <div style={channelTitle}>{c.title || c.name}</div>
+                <div style={channelDesc}>{c.description}</div>
+              </div>
+
+              <button
+                style={openBtn}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/channel/${c._id}`);
+                }}
+              >
+                Open
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+}
+
+/* ---------------------- GITHUB STYLE INPUTS ---------------------- */
+
+const inputStyle = {
+  padding: "10px 12px",
+  borderRadius: 6,
+  background: "#0d1117",
+  border: "1px solid #30363d",
+  color: "#c9d1d9",
+  fontSize: 15,
+  outline: "none",
+};
+
+const createBtn = {
+  width: "100%",
+  marginTop: 14,
+  padding: "12px",
+  borderRadius: 6,
+  background: "#238636",
+  border: "1px solid #2ea043",
+  color: "white",
+  cursor: "pointer",
+  fontWeight: 600,
+  fontSize: 16,
+  transition: "0.2s",
+};
+
+/* ---------------------- CHANNEL CARD ---------------------- */
+
+const channelCard = {
+  padding: 16,
+  borderRadius: 10,
+  background: "#161b22",
+  border: "1px solid #30363d",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  cursor: "pointer",
+  transition: "0.2s",
+};
+
+const channelTitle = {
+  color: "#c9d1d9",
+  fontWeight: 600,
+  fontSize: 17,
+};
+
+const channelDesc = {
+  color: "#8b949e",
+  fontSize: 14,
+  marginTop: 4,
+};
+
+/* OPEN BUTTON */
+const openBtn = {
+  padding: "6px 14px",
+  borderRadius: 6,
+  background: "#21262d",
+  color: "#58a6ff",
+  border: "1px solid #30363d",
+  cursor: "pointer",
+  fontWeight: 500,
+  fontSize: 14,
+  transition: "0.2s",
+};
