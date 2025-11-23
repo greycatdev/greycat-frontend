@@ -1,4 +1,3 @@
-// src/layouts/DashboardLayout.jsx
 import { useEffect, useState, useRef } from "react";
 import { API } from "../api";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,11 +13,12 @@ export default function DashboardLayout({ children }) {
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
+  // MOBILE SIDEBAR
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   /* ---------------- SEARCH LOGIC ---------------- */
   const runSearch = (value) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
     if (!value.trim()) {
       setVisible(false);
@@ -44,14 +44,14 @@ export default function DashboardLayout({ children }) {
     return () => document.removeEventListener("click", handleClick);
   }, []);
 
-  /* -------------- ESC KEY CLOSES SEARCH -------------- */
+  /* -------------- ESC KEY -------------- */
   useEffect(() => {
     const handler = (e) => e.key === "Escape" && setVisible(false);
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* ---------------- LOAD AUTH USER ---------------- */
+  /* ---------------- LOAD USER ---------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (!res.data.authenticated) return navigate("/login");
@@ -59,12 +59,28 @@ export default function DashboardLayout({ children }) {
     });
   }, []);
 
+  const BACKEND_URL =
+    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/logout`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        window.location.href = "/login";
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+      window.location.href = "/login";
+    }
+  };
+
   if (!user)
     return (
       <div
         style={{
           padding: 40,
-          fontFamily: "Poppins, system-ui, sans-serif",
           background: "#0d1117",
           color: "#c9d1d9",
           minHeight: "100vh",
@@ -75,56 +91,69 @@ export default function DashboardLayout({ children }) {
     );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        height: "100vh",
-        background: "#0d1117", // GitHub dark background
-        color: "#c9d1d9",
-        fontFamily: "Poppins, system-ui, sans-serif",
-      }}
-    >
+    <div className="gc-layout">
+      {/* ===== MOBILE BACKDROP ===== */}
+      {mobileOpen && (
+        <div
+          className="gc-sidebar-backdrop"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* ================= SIDEBAR ================= */}
       <aside
+        className={`gc-sidebar ${mobileOpen ? "gc-sidebar--open" : ""}`}
         style={{
-          width: 250,
-          background: "#010409", // GitHub sidebar / header color
-          borderRight: "1px solid #30363d",
-          padding: "18px 18px 20px",
+          padding: "18px",
           display: "flex",
           flexDirection: "column",
           gap: 4,
         }}
       >
-        {/* Logo / title */}
+        {/* SIDEBAR HEADER */}
         <div
-          style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            marginBottom: 10,
+            justifyContent: "space-between",
+          }}
         >
-          <div
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: "50%",
+                overflow: "hidden",
+                background: "#161b22",
+                border: "1px solid #30363d",
+                marginRight: 8,
+              }}
+            >
+              <img
+                src="/icons/greycat.jpeg"
+                alt="greycat"
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            </div>
+            Greycat
+          </div>
+
+          {/* CLOSE (mobile only) */}
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="gc-close-mobile"
             style={{
-              width: 26,
-              height: 26,
-              borderRadius: "50%",
-              background: "#161b22",
-              border: "1px solid #30363d",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 8,
-              overflow: "hidden", // VERY IMPORTANT to make logo round
+              border: "none",
+              background: "transparent",
+              color: "#8b949e",
+              fontSize: 22,
+              cursor: "pointer",
             }}
           >
-            <img
-              src="/icons/greycat.jpeg"
-              alt="greycat"
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          </div>
-          Greycat
+            ✕
+          </button>
         </div>
 
         <hr
@@ -136,221 +165,259 @@ export default function DashboardLayout({ children }) {
           }}
         />
 
-        <SidebarItem to="/" label="Home" icon="home.svg" />
-        <SidebarItem to="/explore" label="Explore" icon="explore.svg" />
-        <SidebarItem to="/events" label="Events" icon="calendar.svg" />
-        <SidebarItem to={`/${user.username}`} label="Profile" icon="user.svg" />
-        <SidebarItem to="/projects" label="Projects" icon="folder.svg" />
+        {/* SIDEBAR LINKS */}
+        <SidebarItem
+          to="/"
+          icon="home.svg"
+          label="Home"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/explore"
+          icon="explore.svg"
+          label="Explore"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/events"
+          icon="calendar.svg"
+          label="Events"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to={`/${user.username}`}
+          icon="user.svg"
+          label="Profile"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/projects"
+          icon="folder.svg"
+          label="Projects"
+          onClickMobile={() => setMobileOpen(false)}
+        />
         <SidebarItem
           to="/import/github"
-          label="Import GitHub"
           icon="github.svg"
+          label="Import GitHub"
+          onClickMobile={() => setMobileOpen(false)}
         />
-        <SidebarItem to="/channels" label="Channels" icon="folder.svg" />
-        <SidebarItem to="/create-post" label="Create Post" icon="plus.svg" />
-        <SidebarItem to="/create-project" label="Add Project" icon="plus.svg" />
-        <SidebarItem to="/settings" label="Settings" icon="settings.svg" />
+        <SidebarItem
+          to="/channels"
+          icon="folder.svg"
+          label="Channels"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/create-post"
+          icon="plus.svg"
+          label="Create Post"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/create-project"
+          icon="plus.svg"
+          label="Add Project"
+          onClickMobile={() => setMobileOpen(false)}
+        />
+        <SidebarItem
+          to="/settings"
+          icon="settings.svg"
+          label="Settings"
+          onClickMobile={() => setMobileOpen(false)}
+        />
 
         <div style={{ flexGrow: 1 }} />
 
-        {/* Logout button (GitHub danger style) */}
+        {/* LOGOUT */}
         <button
-  onClick={() =>
-    (window.location.href = "https://greycat-backend.onrender.com/auth/logout")
-  }
-  style={{
-    width: "100%",
-    padding: "8px 10px",
-    borderRadius: 6,
-    textAlign: "center",
-    color: "#f0f6fc",
-    background: "#21262d",
-    border: "1px solid #30363d",
-    fontSize: 13,
-    fontWeight: 500,
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.background = "#f85149";
-    e.currentTarget.style.borderColor = "#ff7b72";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = "#21262d";
-    e.currentTarget.style.borderColor = "#30363d";
-  }}
->
-  Logout
-</button>
-
+          onClick={handleLogout}
+          style={{
+            width: "100%",
+            padding: "8px 10px",
+            borderRadius: 6,
+            background: "#21262d",
+            border: "1px solid #30363d",
+            color: "#f0f6fc",
+            cursor: "pointer",
+          }}
+        >
+          Logout
+        </button>
       </aside>
 
       {/* ================= MAIN AREA ================= */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        {/* -------- TOP NAV -------- */}
-        <div
-          style={{
-            padding: "8px 18px",
-            background: "#010409",
-            borderBottom: "1px solid #30363d",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            zIndex: 20,
-          }}
-        >
-          {/* Search */}
-          <div style={{ width: "50%", position: "relative" }} ref={searchRef}>
-            <input
-              placeholder="Search users, events..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                runSearch(e.target.value);
-              }}
+      <div className="gc-main">
+        {/* MOBILE BRAND BAR */}
+        <div className="gc-mobile-brand">
+          <div className="gc-brand-left" onClick={() => navigate("/")}>
+            <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
+            <span className="gc-brand-text">GreyCat</span>
+          </div>
+        </div>
+
+        {/* TOPBAR */}
+        <div className="gc-topbar">
+          {/* LEFT SIDE */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              width: "100%",
+            }}
+          >
+            {/* Hamburger */}
+            <button
+              className="gc-mobile-toggle"
+              onClick={() => setMobileOpen(true)}
               style={{
-                width: "100%",
-                padding: "6px 10px",
-                borderRadius: 6,
-                border: "1px solid #30363d",
-                fontSize: 14,
-                background: "#0d1117",
+                border: "none",
+                background: "transparent",
+                fontSize: 20,
                 color: "#c9d1d9",
-                outline: "none",
               }}
-            />
+            >
+              ☰
+            </button>
 
-            {/* Search dropdown */}
-            {visible && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "34px",
-                  width: "100%",
-                  background: "#161b22",
-                  border: "1px solid #30363d",
-                  borderRadius: 6,
-                  boxShadow: "0 8px 24px rgba(1,4,9,0.85)",
-                  maxHeight: 320,
-                  overflowY: "auto",
-                  zIndex: 100,
+            {/* Search */}
+            <div
+              style={{ width: "100%", position: "relative", maxWidth: 480 }}
+              ref={searchRef}
+            >
+              <input
+                placeholder="Search users, events..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  runSearch(e.target.value);
                 }}
-              >
-                {results.users.length === 0 && results.events.length === 0 ? (
-                  <p
-                    style={{
-                      padding: 10,
-                      color: "#8b949e",
-                      fontSize: 13,
-                    }}
-                  >
-                    No results found
-                  </p>
-                ) : (
-                  <>
-                    {/* USERS SECTION */}
-                    {results.users.length > 0 && (
-                      <div>
-                        <p
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: 11,
-                            color: "#6e7681",
-                            textTransform: "uppercase",
-                            letterSpacing: 0.04,
-                          }}
-                        >
-                          Users
-                        </p>
+                style={{
+                  width: "100%",
+                  padding: "6px 10px",
+                  borderRadius: 6,
+                  border: "1px solid #30363d",
+                  background: "#0d1117",
+                  color: "#c9d1d9",
+                }}
+              />
 
-                        {results.users.map((u) => (
-                          <SearchItem
-                            key={u._id}
-                            onClick={() => navigate(`/${u.username}`)}
+              {/* Search results */}
+              {visible && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "34px",
+                    width: "100%",
+                    background: "#161b22",
+                    border: "1px solid #30363d",
+                    borderRadius: 6,
+                    maxHeight: 320,
+                    overflowY: "auto",
+                    zIndex: 100,
+                  }}
+                >
+                  {results.users.length === 0 && results.events.length === 0 ? (
+                    <p style={{ padding: 10, color: "#8b949e", fontSize: 13 }}>
+                      No results found
+                    </p>
+                  ) : (
+                    <>
+                      {results.users.length > 0 && (
+                        <div>
+                          <p
+                            style={{
+                              padding: 6,
+                              fontSize: 11,
+                              color: "#6e7681",
+                            }}
                           >
-                            <img
-                              src={u.photo}
-                              alt={u.username}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: "50%",
-                                objectFit: "cover",
+                            Users
+                          </p>
+                          {results.users.map((u) => (
+                            <SearchItem
+                              key={u._id}
+                              onClick={() => {
+                                navigate(`/${u.username}`);
+                                setVisible(false);
+                                setSearch("");
                               }}
-                            />
-                            @{u.username}
-                          </SearchItem>
-                        ))}
-                      </div>
-                    )}
+                            >
+                              <img
+                                src={u.photo}
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                }}
+                              />
+                              @{u.username}
+                            </SearchItem>
+                          ))}
+                        </div>
+                      )}
 
-                    {/* EVENTS SECTION */}
-                    {results.events.length > 0 && (
-                      <div>
-                        <p
-                          style={{
-                            padding: "6px 10px",
-                            fontSize: 11,
-                            color: "#6e7681",
-                            textTransform: "uppercase",
-                            letterSpacing: 0.04,
-                          }}
-                        >
-                          Events
-                        </p>
-
-                        {results.events.map((ev) => (
-                          <SearchItem
-                            key={ev._id}
-                            onClick={() => navigate(`/event/${ev._id}`)}
+                      {results.events.length > 0 && (
+                        <div>
+                          <p
+                            style={{
+                              padding: 6,
+                              fontSize: 11,
+                              color: "#6e7681",
+                            }}
                           >
-                            {ev.title}
-                          </SearchItem>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+                            Events
+                          </p>
+                          {results.events.map((ev) => (
+                            <SearchItem
+                              key={ev._id}
+                              onClick={() => {
+                                navigate(`/event/${ev._id}`);
+                                setVisible(false);
+                                setSearch("");
+                              }}
+                            >
+                              {ev.title}
+                            </SearchItem>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Avatar */}
           <img
             src={user.photo}
             onClick={() => navigate(`/${user.username}`)}
-            alt="avatar"
             style={{
               width: 32,
               height: 32,
               borderRadius: "50%",
-              objectFit: "cover",
               cursor: "pointer",
               border: "1px solid #30363d",
+              marginLeft: 12,
             }}
           />
         </div>
 
-        {/* -------- PAGE CONTENT -------- */}
-        <main
-          style={{
-            padding: 24,
-            overflowY: "auto",
-            flex: 1,
-          }}
-        >
-          {children}
-        </main>
+        {/* PAGE CONTENT */}
+        <main className="gc-main-content">{children}</main>
       </div>
     </div>
   );
 }
 
-/* ================= SIDEBAR ITEM COMPONENT ================= */
-function SidebarItem({ to, icon, label }) {
+/* ============ SIDEBAR ITEM ============ */
+function SidebarItem({ to, icon, label, onClickMobile }) {
   return (
     <Link
       to={to}
+      onClick={onClickMobile}
       style={{
         display: "flex",
         alignItems: "center",
@@ -360,27 +427,21 @@ function SidebarItem({ to, icon, label }) {
         color: "#c9d1d9",
         borderRadius: 6,
         marginBottom: 2,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "#161b22";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
+        textDecoration: "none",
       }}
     >
       <img
         src={`/icons/${icon}`}
-        width="18"
-        height="18"
-        style={{ opacity: 0.9, filter: "invert(80%)" }}
-        alt=""
+        width={18}
+        height={18}
+        style={{ filter: "invert(80%)" }}
       />
       {label}
     </Link>
   );
 }
 
-/* ================= SEARCH ITEM COMPONENT ================= */
+/* ============ SEARCH ITEM ============ */
 function SearchItem({ children, onClick }) {
   return (
     <div
@@ -392,10 +453,7 @@ function SearchItem({ children, onClick }) {
         gap: 8,
         cursor: "pointer",
         fontSize: 13,
-        color: "#c9d1d9",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#21262d")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       {children}
     </div>

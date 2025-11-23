@@ -146,7 +146,11 @@ export default function ChannelPage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 20, alignItems: "flex-start" }}>
+        <div
+  className="gc-channel-layout"
+  style={{ gap: 20, alignItems: "flex-start" }}
+>
+
           {/* CHAT BOX */}
           <div
             style={{
