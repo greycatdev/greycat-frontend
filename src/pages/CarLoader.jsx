@@ -13,7 +13,7 @@ export default function CarLoader() {
   useEffect(() => {
     const interval = setInterval(() => {
       setIndex((prev) => (prev + 1) % messages.length);
-    }, 1000);
+    }, 1800);
     return () => clearInterval(interval);
   }, []);
 

@@ -78,7 +78,7 @@ html, body {
 
 .car {
   font-size: 48px;
-  animation: drive 1.5s linear infinite;
+  animation: drive 2s linear infinite;
 }
 
 @keyframes drive {
