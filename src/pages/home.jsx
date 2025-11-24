@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
-
+import CarLoader from "./CarLoader";
 export default function Home() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
@@ -37,7 +37,7 @@ export default function Home() {
     });
   }, []);
 
-  if (loading) return <DashboardLayout>Loading…</DashboardLayout>;
+  if (loading) return <CarLoader />;
   if (!user) return null;
 
   return (

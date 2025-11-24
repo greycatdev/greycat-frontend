@@ -64,6 +64,48 @@ html, body {
   width: 100%;
 }
 
+.loader-container {
+  height: 100vh;
+  width: 100%;
+  background: black;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.car {
+  font-size: 48px;
+  animation: drive 1.5s linear infinite;
+}
+
+@keyframes drive {
+  0% {
+    transform: translateX(-200px);
+  }
+  100% {
+    transform: translateX(200px);
+  }
+}
+
+.loader-text {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #bbb;
+  letter-spacing: 1px;
+  text-transform: capitalize;
+  animation: fade 1s ease-in-out infinite;
+}
+
+@keyframes fade {
+  0% { opacity: 0.3; }
+  50% { opacity: 1; }
+  100% { opacity: 0.3; }
+}
+
+
 /* -------------------------------------------------------
    LINKS
 ------------------------------------------------------- */
