@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import "./index.css";   
+
 export default function CarLoader() {
   const messages = [
     "loading the site",
