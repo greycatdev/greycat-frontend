@@ -118,7 +118,7 @@ export default function Settings() {
   };
 
   /* ---------------------------------------------------
-      DELETE ACCOUNT — FIXED VERSION
+      DELETE ACCOUNT
   --------------------------------------------------- */
   const deleteAccount = async () => {
     if (!window.confirm("Delete your account permanently?")) return;
@@ -129,7 +129,6 @@ export default function Settings() {
       });
 
       if (res.data.success) {
-        // Immediately forget cookies and redirect
         window.location.href = "/login";
       } else {
         alert("Delete failed. Please try again.");
@@ -144,6 +143,54 @@ export default function Settings() {
 
   return (
     <DashboardLayout>
+
+      {/* ---------------------------------------------------
+          FIXED FLOATING PANEL (DUMMY TOGGLES)
+      --------------------------------------------------- */}
+      <div
+        style={{
+          position: "fixed",
+          top: "20px",
+          right: "20px",
+          background: "#161b22",
+          border: "1px solid #30363d",
+          padding: "14px 16px",
+          borderRadius: 10,
+          zIndex: 9999,
+          width: "220px",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+        }}
+      >
+        <p style={{ color: "#8b949e", fontSize: 13, marginBottom: 10 }}>
+          Quick Toggles (Demo)
+        </p>
+
+        <Toggle
+          label="Dark mode"
+          value={darkMode}
+          setValue={setDarkMode}
+        />
+
+        <Toggle
+          label="Email notifications"
+          value={notifications.email}
+          setValue={(v) =>
+            setNotifications({ ...notifications, email: v })
+          }
+        />
+
+        <Toggle
+          label="In-app notifications"
+          value={notifications.inApp}
+          setValue={(v) =>
+            setNotifications({ ...notifications, inApp: v })
+          }
+        />
+      </div>
+
+      {/* ---------------------------------------------------
+          MAIN SETTINGS PAGE CONTENT
+      --------------------------------------------------- */}
       <div
         style={{
           maxWidth: 960,
@@ -171,7 +218,7 @@ export default function Settings() {
           Manage your profile, preferences, and privacy.
         </p>
 
-        {/* -------------------------------- PROFILE -------------------------------- */}
+        {/* PROFILE */}
         <Section title="Profile">
           <Input label="Name" value={name} setValue={setName} />
           <Input
@@ -233,13 +280,8 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* -------------------------------- PREFERENCES -------------------------------- */}
+        {/* PREFERENCES */}
         <Section title="Preferences">
-          <Toggle
-            label="Enable dark mode"
-            value={darkMode}
-            setValue={setDarkMode}
-          />
           <Toggle
             label="Show email on public profile"
             value={showEmail}
@@ -279,21 +321,6 @@ export default function Settings() {
             </select>
           </div>
 
-          <Toggle
-            label="Email notifications"
-            value={notifications.email}
-            setValue={(v) =>
-              setNotifications({ ...notifications, email: v })
-            }
-          />
-          <Toggle
-            label="In-app notifications"
-            value={notifications.inApp}
-            setValue={(v) =>
-              setNotifications({ ...notifications, inApp: v })
-            }
-          />
-
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
             <SaveButton
               onClick={savePreferences}
@@ -302,7 +329,7 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* -------------------------------- PRIVACY -------------------------------- */}
+        {/* PRIVACY */}
         <Section title="Privacy">
           <Toggle
             label="Private profile (only followers can see your posts)"
@@ -315,7 +342,7 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* -------------------------------- DANGER ZONE -------------------------------- */}
+        {/* DANGER ZONE */}
         <Section title="Danger zone" danger>
           <p
             style={{

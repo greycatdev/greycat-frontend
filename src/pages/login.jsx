@@ -5,13 +5,10 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Backend URL (local + Vite + Render)
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  /* ----------------------------------------------------
-     1. CLEAR STALE ?logout=success OR ?error=xyz
-     ---------------------------------------------------- */
+  // Clear stale query params
   useEffect(() => {
     const params = new URLSearchParams(location.search);
 
@@ -20,24 +17,18 @@ export default function Login() {
     }
   }, [location.search]);
 
-  /* ----------------------------------------------------
-     2. CHECK IF USER IS ALREADY LOGGED-IN
-     ---------------------------------------------------- */
+  // Check login
   useEffect(() => {
     fetch(`${BACKEND_URL}/auth/user`, {
       credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
-        // If authenticated, redirect to home
         if (data.authenticated) navigate("/");
       })
       .catch(() => {});
   }, []);
 
-  /* ----------------------------------------------------
-     3. OAUTH HANDLERS
-     ---------------------------------------------------- */
   const handleGoogleLogin = () => {
     window.location.href = `${BACKEND_URL}/auth/google`;
   };
@@ -46,40 +37,55 @@ export default function Login() {
     window.location.href = `${BACKEND_URL}/auth/github`;
   };
 
-  /* ----------------------------------------------------
-     UI
-     ---------------------------------------------------- */
+  // Detect dark mode
+  const isDark =
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  // Theme vars
+  const theme = {
+    bg: isDark ? "#0d1117" : "#f6f8fa",
+    cardBg: isDark ? "#161b22" : "#ffffff",
+    text: isDark ? "#e6edf3" : "#1f2328",
+    border: isDark ? "#30363d" : "#d0d7de",
+    googleHover: isDark ? "#21262d" : "#f3f4f6",
+  };
+
   return (
     <div
       style={{
         height: "100vh",
         width: "100vw",
-        background: "#f6f8fa",
+        background: theme.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif',
-        color: "#1f2328",
+        color: theme.text,
+        padding: "20px",
       }}
     >
       <div
         style={{
-          width: "380px",
-          padding: "40px 36px",
-          borderRadius: "8px",
-          background: "#ffffff",
-          border: "1px solid #d0d7de",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+          width: "100%",
+          maxWidth: "380px",
+          padding: "32px 28px",
+          borderRadius: "10px",
+          background: theme.cardBg,
+          border: `1px solid ${theme.border}`,
+          boxShadow: isDark
+            ? "0 0 0"
+            : "0 1px 3px rgba(0,0,0,0.06)",
           textAlign: "center",
         }}
       >
         <h1
           style={{
-            fontSize: "24px",
-            marginBottom: "26px",
+            fontSize: "20px",
+            marginBottom: "22px",
             fontWeight: 600,
-            color: "#1f2328",
+            color: theme.text,
           }}
         >
           Sign in to GreyCat
@@ -90,26 +96,31 @@ export default function Login() {
           onClick={handleGoogleLogin}
           style={{
             width: "100%",
-            padding: "12px",
-            marginBottom: "18px",
+            padding: "14px",
+            marginBottom: "16px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
             borderRadius: "6px",
-            background: "#ffffff",
-            border: "1px solid #d0d7de",
-            color: "#1f2328",
+            background: theme.cardBg,
+            border: `1px solid ${theme.border}`,
+            color: theme.text,
             fontSize: "15px",
-            transition: "0.15s",
             cursor: "pointer",
+            transition: "0.15s",
           }}
-          onMouseEnter={(e) => (e.target.style.background = "#f3f4f6")}
-          onMouseLeave={(e) => (e.target.style.background = "#ffffff")}
+          onMouseEnter={(e) =>
+            (e.target.style.background = theme.googleHover)
+          }
+          onMouseLeave={(e) =>
+            (e.target.style.background = theme.cardBg)
+          }
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
             width="20"
+            style={{ filter: isDark ? "invert(1)" : "none" }}
           />
           Continue with Google
         </button>
@@ -119,7 +130,7 @@ export default function Login() {
           onClick={handleGithubLogin}
           style={{
             width: "100%",
-            padding: "12px",
+            padding: "14px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -129,11 +140,15 @@ export default function Login() {
             border: "1px solid #1b1f24",
             color: "#ffffff",
             fontSize: "15px",
-            transition: "0.15s",
             cursor: "pointer",
+            transition: "0.15s",
           }}
-          onMouseEnter={(e) => (e.target.style.background = "#1f2328")}
-          onMouseLeave={(e) => (e.target.style.background = "#24292f")}
+          onMouseEnter={(e) =>
+            (e.target.style.background = "#1f2328")
+          }
+          onMouseLeave={(e) =>
+            (e.target.style.background = "#24292f")
+          }
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
