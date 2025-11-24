@@ -28,7 +28,7 @@ export default function PostPage() {
 
   if (!post) return <DashboardLayout>Loading...</DashboardLayout>;
 
-  const isOwner = user && user._id === post.user._id;
+  const isOwner = user && post?.user && user._id === post.user._id;
 
   const deletePost = () => {
     if (!window.confirm("Delete this post?")) return;
@@ -72,14 +72,9 @@ export default function PostPage() {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      style={{
-        cursor: "pointer",
-        transition: "0.25s",
-      }}
+      style={{ cursor: "pointer", transition: "0.25s" }}
     >
-      <path
-        d="M20.8 4.6c-1.5-1.6-4-1.7-5.6-.2l-.9.9-.9-.9C12 2.9 9.5 3 8 4.6c-1.6 1.6-1.7 4.3 0 6l7.4 7.6L20.8 10c1.7-1.7 1.6-4.4 0-6z"
-      />
+      <path d="M20.8 4.6c-1.5-1.6-4-1.7-5.6-.2l-.9.9-.9-.9C12 2.9 9.5 3 8 4.6c-1.6 1.6-1.7 4.3 0 6l7.4 7.6L20.8 10c1.7-1.7 1.6-4.4 0-6z" />
     </svg>
   );
 
@@ -107,11 +102,13 @@ export default function PostPage() {
           }}
         >
           <div
-            onClick={() => navigate(`/${post.user.username}`)}
+            onClick={() =>
+              post?.user?.username && navigate(`/${post.user.username}`)
+            }
             style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
           >
             <img
-              src={post.user.photo}
+              src={post?.user?.photo}
               style={{
                 width: 48,
                 height: 48,
@@ -122,7 +119,7 @@ export default function PostPage() {
               }}
             />
             <b style={{ fontSize: 15, color: "#c9d1d9" }}>
-              @{post.user.username}
+              @{post?.user?.username ?? "unknown"}
             </b>
           </div>
 
@@ -148,16 +145,11 @@ export default function PostPage() {
         {/* ---------- IMAGE ---------- */}
         <img
           src={post.image}
-          style={{
-            width: "100%",
-            objectFit: "cover",
-            maxHeight: 600,
-          }}
+          style={{ width: "100%", objectFit: "cover", maxHeight: 600 }}
         />
 
         {/* ---------- LIKE + CAPTION ---------- */}
         <div style={{ padding: "18px 20px" }}>
-          {/* HEART BUTTON */}
           <div onClick={toggleLike} style={{ display: "inline-block" }}>
             <HeartIcon filled={post.likedByCurrentUser} />
           </div>
@@ -169,10 +161,12 @@ export default function PostPage() {
           {post.caption && (
             <p style={{ marginBottom: 6, fontSize: 15 }}>
               <b
-                onClick={() => navigate(`/${post.user.username}`)}
+                onClick={() =>
+                  post?.user?.username && navigate(`/${post.user.username}`)
+                }
                 style={{ cursor: "pointer", color: "#c9d1d9" }}
               >
-                @{post.user.username}
+                @{post?.user?.username ?? "unknown"}
               </b>{" "}
               <span style={{ color: "#b3b3b3" }}>{post.caption}</span>
             </p>
@@ -197,39 +191,49 @@ export default function PostPage() {
             Comments
           </h3>
 
-          {post.comments.map((c) => (
-            <div
-              key={c._id}
-              style={{
-                marginBottom: 14,
-                padding: "8px 10px",
-                background: "#161b22",
-                border: "1px solid #30363d",
-                borderRadius: 6,
-                display: "flex",
-                gap: 10,
-              }}
-            >
-              <b
-                onClick={() => navigate(`/${c.user.username}`)}
+          {post.comments?.map((c) =>
+            c ? (
+              <div
+                key={c._id}
                 style={{
-                  cursor: "pointer",
-                  color: "#c9d1d9",
-                  fontSize: 14,
+                  marginBottom: 14,
+                  padding: "8px 10px",
+                  background: "#161b22",
+                  border: "1px solid #30363d",
+                  borderRadius: 6,
+                  display: "flex",
+                  gap: 10,
                 }}
               >
-                @{c.user.username}
-              </b>
+                <b
+                  onClick={() =>
+                    c?.user?.username && navigate(`/${c.user.username}`)
+                  }
+                  style={{
+                    cursor: "pointer",
+                    color: "#c9d1d9",
+                    fontSize: 14,
+                  }}
+                >
+                  @{c?.user?.username ?? "unknown"}
+                </b>
 
-              <span style={{ flex: 1, color: "#b3b3b3", fontSize: 14 }}>
-                {c.text}
-              </span>
+                <span style={{ flex: 1, color: "#b3b3b3", fontSize: 14 }}>
+                  {c.text}
+                </span>
 
-              <span style={{ color: "#8b949e", fontSize: 12, whiteSpace: "nowrap" }}>
-                {formatTime(c.createdAt)}
-              </span>
-            </div>
-          ))}
+                <span
+                  style={{
+                    color: "#8b949e",
+                    fontSize: 12,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {formatTime(c.createdAt)}
+                </span>
+              </div>
+            ) : null
+          )}
 
           {/* ---------- COMMENT INPUT ---------- */}
           <div style={{ marginTop: 12 }}>
