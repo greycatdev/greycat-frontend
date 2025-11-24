@@ -113,7 +113,7 @@ export default function DashboardLayout({ children }) {
           <div className="gc-mobile-sidebar-header">
             <div className="gc-brand-left">
               <img
-                src="./icons/greycat.jpeg"
+                src="/icons/greycat.jpeg"
                 className="gc-brand-logo"
                 alt="Greycat Logo"
               />
@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }) {
               }}
             >
               <img
-                src="./icons/greycat.jpeg"
+                src="/icons/greycat.jpeg"
                 style={{
                   width: "100%",
                   height: "100%",
@@ -229,7 +229,7 @@ export default function DashboardLayout({ children }) {
           <div className="gc-mobile-brand-top" onClick={() => navigate('/')}>
             <div className="gc-brand-left">
               <img
-                src="./icons/greycat.jpeg"
+                src="/icons/greycat.jpeg"
                 className="gc-brand-logo"
                 alt="Greycat Logo"
               />

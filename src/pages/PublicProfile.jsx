@@ -74,14 +74,18 @@ export default function PublicProfile() {
   /* ---------------- Load posts ---------------- */
   useEffect(() => {
     API.get(`/post/user/${username}`).then((res) => {
-      if (res.data.success) setPosts(res.data.posts);
+      if (res.data.success && Array.isArray(res.data.posts)) {
+        setPosts(res.data.posts);
+      }
     });
   }, [username]);
 
   /* ---------------- Load projects ---------------- */
   useEffect(() => {
     API.get(`/project/user/${username}`).then((res) => {
-      if (res.data.success) setProjects(res.data.projects);
+      if (res.data.success && Array.isArray(res.data.projects)) {
+        setProjects(res.data.projects);
+      }
     });
   }, [username]);
 
@@ -104,7 +108,7 @@ export default function PublicProfile() {
     });
   };
 
-  /* ---------------- LOADING / ERROR ---------------- */
+  /* ---------------- SAFETY CHECKS ---------------- */
   if (loading)
     return <DashboardLayout>Loading profile...</DashboardLayout>;
 
@@ -112,18 +116,18 @@ export default function PublicProfile() {
     return (
       <DashboardLayout>
         <h2 style={{ color: "#f85149" }}>{error}</h2>
-        <Link to="/" style={{ color: "#58a6ff" }}>
-          Go Back Home
-        </Link>
+        <Link to="/" style={{ color: "#58a6ff" }}>Go Back Home</Link>
       </DashboardLayout>
     );
+
+  if (!profileUser) return <DashboardLayout>User not found.</DashboardLayout>;
 
   return (
     <DashboardLayout>
       <div style={{ fontFamily: "Poppins", padding: "0 12px", color: "#c9d1d9" }}>
 
         {/* =====================================================
-            INSTAGRAM-STYLE HEADER (Mobile + Desktop)
+            INSTAGRAM-STYLE HEADER
         ====================================================== */}
         <div
           style={{
@@ -148,7 +152,7 @@ export default function PublicProfile() {
             }}
           />
 
-          {/* Right section */}
+          {/* Right Section */}
           <div style={{ flex: 1 }}>
             {/* Name */}
             <h1 style={{ margin: 0, color: "#c9d1d9", fontSize: isMobile ? 20 : 26 }}>
@@ -167,15 +171,12 @@ export default function PublicProfile() {
               </p>
             )}
 
-            {/* Follow / Edit Button */}
+            {/* Follow / Edit */}
             <div style={{ marginTop: 10, width: isMobile ? "100%" : "auto" }}>
               {loggedInUser?.username === profileUser.username ? (
                 <button
                   onClick={() => navigate("/edit-profile")}
-                  style={{
-                    ...btnPrimary,
-                    width: isMobile ? "100%" : "auto",
-                  }}
+                  style={{ ...btnPrimary, width: isMobile ? "100%" : "auto" }}
                 >
                   Edit Profile
                 </button>
@@ -194,7 +195,7 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* IG-style stats row */}
+        {/* Stats Row */}
         <div
           style={{
             marginTop: 18,
@@ -204,15 +205,9 @@ export default function PublicProfile() {
             fontSize: 15,
           }}
         >
-          <span>
-            <b>{posts.length}</b> posts
-          </span>
-          <span>
-            <b>{followersCount}</b> followers
-          </span>
-          <span>
-            <b>{followingCount}</b> following
-          </span>
+          <span><b>{posts.length}</b> posts</span>
+          <span><b>{followersCount}</b> followers</span>
+          <span><b>{followingCount}</b> following</span>
         </div>
 
         {/* BIO */}
@@ -273,20 +268,28 @@ export default function PublicProfile() {
                 }}
               >
                 {projects.map((proj) => (
-                  <div
-                    key={proj._id}
-                    onClick={() => navigate(`/project/${proj._id}`)}
-                    style={projectCard}
-                    onMouseEnter={(e) => (e.currentTarget.style.border = "1px solid #58a6ff")}
-                    onMouseLeave={(e) => (e.currentTarget.style.border = "1px solid #30363d")}
-                  >
-                    <h4 style={{ margin: "10px 0", color: "#c9d1d9" }}>
-                      {proj.title}
-                    </h4>
-                    <p style={{ fontSize: 13, color: "#8b949e" }}>
-                      {Array.isArray(proj.tech) ? proj.tech.join(", ") : proj.tech}
-                    </p>
-                  </div>
+                  proj ? (
+                    <div
+                      key={proj._id}
+                      onClick={() => navigate(`/project/${proj._id}`)}
+                      style={projectCard}
+                    >
+                      <h4 style={{ margin: "10px 0", color: "#c9d1d9" }}>
+                        {proj.title}
+                      </h4>
+
+                      <p style={{ fontSize: 13, color: "#8b949e" }}>
+                        {Array.isArray(proj.tech) ? proj.tech.join(", ") : proj.tech}
+                      </p>
+
+                      {/* SAFETY: user may be missing */}
+                      {proj.user && (
+                        <p style={{ color: "#8b949e", fontSize: 12 }}>
+                          @{proj.user.username}
+                        </p>
+                      )}
+                    </div>
+                  ) : null
                 ))}
               </div>
             )}
@@ -307,17 +310,19 @@ export default function PublicProfile() {
                 gap: 8,
               }}
             >
-              {posts.map((post) => (
-                <img
-                  key={post._id}
-                  src={post.image}
-                  style={{
-                    ...postCard,
-                    height: isMobile ? 150 : 240,
-                  }}
-                  onClick={() => navigate(`/post/${post._id}`)}
-                />
-              ))}
+              {posts.map((post) =>
+                post ? (
+                  <img
+                    key={post._id}
+                    src={post.image}
+                    style={{
+                      ...postCard,
+                      height: isMobile ? 150 : 240,
+                    }}
+                    onClick={() => navigate(`/post/${post._id}`)}
+                  />
+                ) : null
+              )}
             </div>
           )}
         </div>
