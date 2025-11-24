@@ -37,7 +37,7 @@ export default function Settings() {
       LOAD SETTINGS
   --------------------------------------------------- */
   useEffect(() => {
-    API.get("/settings")
+    API.get("/settings", { withCredentials: true })
       .then((res) => {
         if (res.data.success) {
           const s = res.data.settings;
@@ -86,7 +86,11 @@ export default function Settings() {
         .map((t) => t.trim())
         .filter(Boolean),
     };
-    const res = await API.post("/settings/profile", payload);
+
+    const res = await API.post("/settings/profile", payload, {
+      withCredentials: true,
+    });
+
     alert(res.data.success ? "Profile saved" : "Save failed");
   };
 
@@ -98,22 +102,45 @@ export default function Settings() {
       notifications,
       language,
     };
-    const res = await API.post("/settings/preferences", payload);
+    const res = await API.post("/settings/preferences", payload, {
+      withCredentials: true,
+    });
     alert(res.data.success ? "Preferences saved" : "Save failed");
   };
 
   const savePrivacy = async () => {
-    const res = await API.post("/settings/privacy", { privateProfile });
+    const res = await API.post(
+      "/settings/privacy",
+      { privateProfile },
+      { withCredentials: true }
+    );
     alert(res.data.success ? "Privacy saved" : "Save failed");
   };
 
+  /* ---------------------------------------------------
+      DELETE ACCOUNT — FIXED VERSION
+  --------------------------------------------------- */
   const deleteAccount = async () => {
     if (!window.confirm("Delete your account permanently?")) return;
-    const res = await API.delete("/settings/delete");
-    if (res.data.success) window.location.href = "/login";
+
+    try {
+      const res = await API.delete("/settings/delete", {
+        withCredentials: true,
+      });
+
+      if (res.data.success) {
+        // Immediately forget cookies and redirect
+        window.location.href = "/login";
+      } else {
+        alert("Delete failed. Please try again.");
+      }
+    } catch (err) {
+      alert("Error deleting account.");
+    }
   };
 
-  if (loading) return <DashboardLayout>Loading settings...</DashboardLayout>;
+  if (loading)
+    return <DashboardLayout>Loading settings...</DashboardLayout>;
 
   return (
     <DashboardLayout>
@@ -122,7 +149,8 @@ export default function Settings() {
           maxWidth: 960,
           margin: "0 auto",
           padding: "24px 24px 40px",
-          fontFamily: "Poppins, system-ui, -apple-system, BlinkMacSystemFont",
+          fontFamily:
+            "Poppins, system-ui, -apple-system, BlinkMacSystemFont",
           color: "#c9d1d9",
         }}
       >
@@ -137,14 +165,20 @@ export default function Settings() {
         >
           Settings
         </h1>
-        <p style={{ marginBottom: 24, color: "#8b949e", fontSize: 14 }}>
+        <p
+          style={{ marginBottom: 24, color: "#8b949e", fontSize: 14 }}
+        >
           Manage your profile, preferences, and privacy.
         </p>
 
         {/* -------------------------------- PROFILE -------------------------------- */}
         <Section title="Profile">
           <Input label="Name" value={name} setValue={setName} />
-          <Input label="Username" value={username} setValue={setUsername} />
+          <Input
+            label="Username"
+            value={username}
+            setValue={setUsername}
+          />
           <Input
             label="Bio"
             type="textarea"
@@ -248,16 +282,23 @@ export default function Settings() {
           <Toggle
             label="Email notifications"
             value={notifications.email}
-            setValue={(v) => setNotifications({ ...notifications, email: v })}
+            setValue={(v) =>
+              setNotifications({ ...notifications, email: v })
+            }
           />
           <Toggle
             label="In-app notifications"
             value={notifications.inApp}
-            setValue={(v) => setNotifications({ ...notifications, inApp: v })}
+            setValue={(v) =>
+              setNotifications({ ...notifications, inApp: v })
+            }
           />
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <SaveButton onClick={savePreferences} text="Save preferences" />
+            <SaveButton
+              onClick={savePreferences}
+              text="Save preferences"
+            />
           </div>
         </Section>
 
@@ -284,12 +325,15 @@ export default function Settings() {
               lineHeight: 1.5,
             }}
           >
-            Deleting your account is permanent. All posts, projects, and data
-            will be erased. This action cannot be undone.
+            Deleting your account is permanent. All posts, projects,
+            and data will be erased. This action cannot be undone.
           </p>
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <DangerButton onClick={deleteAccount} text="Delete account" />
+            <DangerButton
+              onClick={deleteAccount}
+              text="Delete account"
+            />
           </div>
         </Section>
       </div>

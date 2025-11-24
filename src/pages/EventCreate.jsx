@@ -34,32 +34,25 @@ export default function EventCreate() {
 
     let bannerUrl = null;
 
-    // ✔ If user uploaded → upload to Cloudinary
-    if (bannerFile) {
-      try {
-        const formData = new FormData();
-        formData.append("banner", bannerFile);
-
-        const uploadRes = await API.post("/upload/banner", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-
-        if (uploadRes.data?.success) {
-          bannerUrl = uploadRes.data.url;
-        } else {
-          alert("Banner upload failed.");
-          return;
-        }
-      } catch (err) {
-        console.error("UPLOAD ERROR:", err);
-        alert("Error uploading banner.");
-        return;
-      }
+    // If user didn’t upload → generate random banner
+    if (!bannerFile) {
+      bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
+        Date.now() + "-" + Math.random()
+      }`;
     }
 
-    // ✔ If no upload → fallback to default banner
-    if (!bannerUrl) {
-      bannerUrl = "/icons/default-event-banner.jpeg";
+    // If user uploaded → upload to server
+    if (bannerFile) {
+      const formData = new FormData();
+      formData.append("banner", bannerFile); // must match backend field name
+
+      const uploadRes = await API.post("/upload/banner", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (uploadRes.data.success) {
+        bannerUrl = uploadRes.data.url;
+      }
     }
 
     // CREATE EVENT
@@ -69,14 +62,10 @@ export default function EventCreate() {
       date,
       location,
       type,
-      bannerImage: bannerUrl,
+      bannerImage: bannerUrl, // must match DB schema
     });
 
-    if (res.data.success) {
-      navigate(`/event/${res.data.event._id}`);
-    } else {
-      alert("Error creating event");
-    }
+    if (res.data.success) navigate(`/event/${res.data.event._id}`);
   };
 
   return (
@@ -92,7 +81,8 @@ export default function EventCreate() {
             <div style={bannerBox}>
               <img
                 src={
-                  bannerPreview || "/icons/default-event-banner.jpeg"
+                  bannerPreview ||
+                  "https://via.placeholder.com/1200x400/0d1117/ffffff?text=Event+Banner"
                 }
                 alt="Event banner"
                 style={bannerImage}

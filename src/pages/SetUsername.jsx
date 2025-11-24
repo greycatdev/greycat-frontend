@@ -1,64 +1,104 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function SetUsername() {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [username, setUsername] = useState("");
   const [available, setAvailable] = useState(null);
   const [checking, setChecking] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // Auto-detect backend URL
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  /* ---------------- LOAD USER ---------------- */
+  /* ----------------------------------------------------
+     1. CLEAR ?logout or ?error IN CASE USER CAME HERE
+  ---------------------------------------------------- */
   useEffect(() => {
-    fetch(`${BACKEND_URL}/auth/user`, {
-      credentials: "include",
-    })
+    const params = new URLSearchParams(location.search);
+    if (params.get("logout") || params.get("error")) {
+      window.history.replaceState({}, "", "/set-username");
+    }
+  }, [location.search]);
+
+  /* ----------------------------------------------------
+     2. LOAD USER STATUS
+  ---------------------------------------------------- */
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/auth/user`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (!data.authenticated) return navigate("/login");
+
         setUserId(data.user._id);
+
+        // If user already set username (rare redirect case)
         if (data.user.username) return navigate("/");
       })
       .catch(() => navigate("/login"));
   }, []);
 
-  /* ---------------- VALIDATION ---------------- */
+  /* ----------------------------------------------------
+     3. VALIDATION
+  ---------------------------------------------------- */
   const validateFormat = (name) => /^[a-zA-Z0-9._]+$/.test(name);
 
+  /* ----------------------------------------------------
+     4. CHECK USERNAME
+  ---------------------------------------------------- */
   const checkUsername = async () => {
-    if (!validateFormat(username)) {
-      alert("Username can contain letters, numbers, . and _ only.");
+    const trimmed = username.trim().toLowerCase();
+
+    if (!trimmed) return alert("Username cannot be empty.");
+
+    if (!validateFormat(trimmed)) {
+      alert("Username can contain letters, numbers, dot (.) and underscore (_) only.");
       return;
     }
 
     setChecking(true);
 
-    const res = await fetch(
-      `${BACKEND_URL}/user/check-username/${username}`
-    );
-    const data = await res.json();
+    try {
+      const res = await fetch(`${BACKEND_URL}/user/check-username/${trimmed}`);
+      const data = await res.json();
 
-    setAvailable(!data.exists);
+      setAvailable(!data.exists);
+    } catch (err) {
+      alert("Error checking username.");
+    }
+
     setChecking(false);
   };
 
+  /* ----------------------------------------------------
+     5. SAVE USERNAME
+  ---------------------------------------------------- */
   const saveUsername = async () => {
+    if (!available) return;
+    if (!userId) return;
+
+    const trimmed = username.trim().toLowerCase();
+
     const res = await fetch(`${BACKEND_URL}/user/set-username`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, username }),
+      body: JSON.stringify({ userId, username: trimmed }),
     });
 
     const data = await res.json();
-    if (data.success) navigate("/");
-    else alert(data.message || "Error saving username");
+    if (data.success) {
+      navigate("/");
+    } else {
+      alert(data.message || "Error saving username");
+    }
   };
 
+  /* ----------------------------------------------------
+     UI
+  ---------------------------------------------------- */
   return (
     <div
       style={{
@@ -72,7 +112,6 @@ export default function SetUsername() {
         color: "#c9d1d9",
       }}
     >
-      {/* CARD */}
       <div
         style={{
           width: 420,
@@ -88,31 +127,17 @@ export default function SetUsername() {
             fontSize: 24,
             color: "#f0f6fc",
             marginBottom: 4,
-            textAlign: "left",
             fontWeight: 600,
           }}
         >
           Pick your username
         </h1>
-        <p
-          style={{
-            marginTop: 0,
-            marginBottom: 24,
-            fontSize: 14,
-            color: "#8b949e",
-          }}
-        >
+
+        <p style={{ marginTop: 0, marginBottom: 24, fontSize: 14, color: "#8b949e" }}>
           This will be your unique identity on GreyCat.
         </p>
 
-        <label
-          style={{
-            fontSize: 14,
-            marginBottom: 6,
-            display: "block",
-            color: "#8b949e",
-          }}
-        >
+        <label style={{ fontSize: 14, marginBottom: 6, display: "block", color: "#8b949e" }}>
           Username
         </label>
 
@@ -142,9 +167,7 @@ export default function SetUsername() {
           }}
         />
 
-        {checking && (
-          <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>
-        )}
+        {checking && <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>}
 
         {available === true && (
           <p style={{ color: "#2ea043", marginTop: 8, fontSize: 14 }}>

@@ -4,6 +4,85 @@ import { useParams, useNavigate } from "react-router-dom";
 import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 
+// --- START: Helper for responsive styles based on screen size (simulated media query) ---
+const getResponsiveStyles = () => {
+  const isMobile = window.innerWidth <= 600;
+
+  return {
+    // For the main wrapper
+    mainContainer: {
+      maxWidth: 900,
+      width: "100%", // Use full width on mobile
+      margin: "0 auto",
+      padding: isMobile ? "10px" : "20px", // Less padding on small screens
+      fontFamily: "Poppins, system-ui, sans-serif",
+      color: "#c9d1d9",
+    },
+    // For the Banner Section
+    bannerContainer: {
+      position: "relative",
+      height: isMobile ? 180 : 220, // Reduced height for mobile
+      overflow: "hidden",
+    },
+    // For the Host and Actions Section (To force stacking on mobile)
+    hostActions: {
+      display: "flex",
+      flexDirection: isMobile ? "column" : "row", // Stack on mobile
+      alignItems: isMobile ? "flex-start" : "center", // Align to start on mobile
+      gap: 14,
+      marginBottom: 18,
+    },
+    // For the right-side action buttons (Share/Delete)
+    actionButtons: {
+      marginLeft: isMobile ? "0" : "auto", // Remove auto margin on mobile
+      marginTop: isMobile ? "10px" : "0", // Add top margin on mobile
+      width: isMobile ? "100%" : "auto", // Take full width on mobile
+      display: "flex",
+      flexWrap: "wrap", // Allow buttons to wrap
+      gap: 10,
+    },
+    // For individual action buttons
+    actionButtonBase: {
+      flexGrow: isMobile ? 1 : 0, // Stretch buttons horizontally on mobile
+      justifyContent: "center", // Center text in stretched buttons
+      padding: "6px 10px",
+      borderRadius: 6,
+      border: "1px solid #30363d",
+      background: "#161b22",
+      color: "#c9d1d9",
+      fontSize: 13,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: 6,
+      textDecoration: "none",
+    },
+    // For the Join/Leave button
+    joinLeaveButton: {
+      width: "100%",
+      padding: "12px 14px",
+      borderRadius: 8,
+      fontWeight: 600,
+      fontSize: 15,
+      cursor: "pointer",
+      marginBottom: 24,
+    },
+  };
+};
+
+function useResponsiveStyles() {
+  const [styles, setStyles] = useState(getResponsiveStyles());
+
+  useEffect(() => {
+    const handleResize = () => setStyles(getResponsiveStyles());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return styles;
+}
+// --- END: Helper for responsive styles ---
+
 export default function EventPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -13,6 +92,8 @@ export default function EventPage() {
   const [commentText, setCommentText] = useState("");
   const [countdown, setCountdown] = useState(null);
   const [copyStatus, setCopyStatus] = useState("");
+
+  const styles = useResponsiveStyles(); // Use responsive styles hook
 
   /* ---------------- LOAD EVENT + USER ---------------- */
   const loadEvent = () => {
@@ -139,15 +220,7 @@ export default function EventPage() {
   /* ---------------- UI ---------------- */
   return (
     <DashboardLayout>
-      <div
-        style={{
-          maxWidth: 900,
-          margin: "0 auto",
-          padding: "20px",
-          fontFamily: "Poppins, system-ui, sans-serif",
-          color: "#c9d1d9",
-        }}
-      >
+      <div style={styles.mainContainer}>
         {/* CARD WRAPPER */}
         <div
           style={{
@@ -159,25 +232,16 @@ export default function EventPage() {
           }}
         >
           {/* BANNER (Feature A) */}
-          <div
-            style={{ position: "relative", height: 220, overflow: "hidden" }}
-          >
-            {(event.bannerImage || event.banner) &&
-            (event.bannerImage || event.banner).trim() ? (
+          <div style={styles.bannerContainer}>
+            {event.bannerImage ? (
               <img
-                src={event.bannerImage || event.banner}
+                src={event.bannerImage}
                 alt="Event banner"
                 style={{
                   width: "100%",
                   height: "100%",
                   objectFit: "cover",
                   filter: "brightness(0.85)",
-                }}
-                onError={(e) => {
-                  console.error("Image failed to load:", e.target.src);
-                  e.target.style.display = "none";
-                  e.target.parentElement.style.background =
-                    "radial-gradient(circle at top, #1f6feb 0, #0d1117 55%)";
                 }}
               />
             ) : (
@@ -186,7 +250,7 @@ export default function EventPage() {
                   width: "100%",
                   height: "100%",
                   background:
-                    "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    "radial-gradient(circle at top, #1f6feb 0, #0d1117 55%)",
                   display: "flex",
                   alignItems: "flex-end",
                   padding: "16px 20px",
@@ -265,13 +329,14 @@ export default function EventPage() {
               </span>
             </div>
 
-            {/* TOP RIGHT: COUNTDOWN (Feature B) */}
+            {/* BOTTOM RIGHT: COUNTDOWN (Feature B) */}
             {countdown && (
               <div
                 style={{
                   position: "absolute",
                   right: 18,
-                  top: 14,
+                  // Changed from top: 14 to bottom: 14
+                  bottom: 14, 
                   padding: "6px 12px",
                   borderRadius: 999,
                   border: "1px solid #30363d",
@@ -302,14 +367,7 @@ export default function EventPage() {
           {/* CONTENT AREA */}
           <div style={{ padding: "18px 20px 22px 20px" }}>
             {/* HOST + ACTIONS */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                marginBottom: 18,
-              }}
-            >
+            <div style={styles.hostActions}>
               <div
                 onClick={() => navigate(`/${event.host.username}`)}
                 style={{
@@ -346,22 +404,12 @@ export default function EventPage() {
                 </div>
               </div>
 
-              <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+              {/* ACTION BUTTONS (Share/Delete) */}
+              <div style={styles.actionButtons}>
                 {/* Share (Feature F) */}
                 <button
                   onClick={copyLink}
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 6,
-                    border: "1px solid #30363d",
-                    background: "#161b22",
-                    color: "#c9d1d9",
-                    fontSize: 13,
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                  }}
+                  style={styles.actionButtonBase}
                 >
                   <span>🔗</span> Copy link
                 </button>
@@ -370,18 +418,7 @@ export default function EventPage() {
                   href={whatsappLink}
                   target="_blank"
                   rel="noreferrer"
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 6,
-                    border: "1px solid #30363d",
-                    background: "#161b22",
-                    color: "#c9d1d9",
-                    fontSize: 13,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    textDecoration: "none",
-                  }}
+                  style={styles.actionButtonBase}
                 >
                   🟢 WhatsApp
                 </a>
@@ -390,18 +427,7 @@ export default function EventPage() {
                   href={xLink}
                   target="_blank"
                   rel="noreferrer"
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 6,
-                    border: "1px solid #30363d",
-                    background: "#161b22",
-                    color: "#c9d1d9",
-                    fontSize: 13,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    textDecoration: "none",
-                  }}
+                  style={styles.actionButtonBase}
                 >
                   ✖ X
                 </a>
@@ -410,13 +436,11 @@ export default function EventPage() {
                   <button
                     onClick={deleteEvent}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: 6,
+                      ...styles.actionButtonBase,
                       border: "1px solid #f85149",
                       background: "#1b1516",
                       color: "#f85149",
-                      fontSize: 13,
-                      cursor: "pointer",
+                      flexGrow: styles.actionButtonBase.flexGrow, // Inherit flexGrow for mobile
                     }}
                   >
                     Delete
@@ -484,16 +508,10 @@ export default function EventPage() {
               <button
                 onClick={joinEvent}
                 style={{
-                  width: "100%",
-                  padding: "12px 14px",
-                  borderRadius: 8,
+                  ...styles.joinLeaveButton,
                   border: isJoined ? "1px solid #f85149" : "1px solid #2ea043",
                   background: isJoined ? "#1b1516" : "#238636",
                   color: "#ffffff",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  marginBottom: 24,
                 }}
               >
                 {isJoined ? "Leave event" : "Join event"}
@@ -729,7 +747,7 @@ export default function EventPage() {
 /* Small stat block component for the stats bar */
 function StatBlock({ label, value }) {
   return (
-    <div style={{ minWidth: 0 }}>
+    <div style={{ minWidth: 0, flex: "1 1 45%" }}> {/* Added flex property for distribution */}
       <div
         style={{
           fontSize: 12,

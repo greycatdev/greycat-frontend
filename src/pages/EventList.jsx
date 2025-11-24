@@ -27,90 +27,60 @@ export default function EventList() {
 
         {/* GRID */}
         <div style={grid}>
-          {events.map((ev) => {
-            // Host data normalization
-            const hostData =
-              typeof ev.host === "object"
-                ? ev.host
-                : { username: "Unknown", photo: "" };
+          {events.map((ev) => (
+            <div
+              key={ev._id}
+              onClick={() => navigate(`/event/${ev._id}`)}
+              style={eventCard}
+              className="event-card"
+            >
+              {/* EVENT BANNER */}
+              <div style={bannerBox}>
+                <img
+                  src={ev.bannerImage}
+                  alt="event banner"
+                  style={bannerImage}
+                />
+              </div>
 
-            // Banner – Option B: pull from DB, do NOT generate random again
-            const bannerUrl =
-              (ev.bannerImage || ev.banner || "").trim() ||
-              "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=400&fit=crop";
+              <div style={cardContent}>
+                {/* TITLE */}
+                <h3 style={eventTitle}>{ev.title}</h3>
 
-            return (
-              <div
-                key={ev._id}
-                onClick={() => navigate(`/event/${ev._id}`)}
-                style={eventCard}
-                className="event-card"
-              >
-                {/* EVENT BANNER */}
-                <div style={bannerBox}>
-                  <img
-                    src={bannerUrl}
-                    alt="event banner"
-                    style={bannerImage}
-                    onError={(e) => {
-                      e.target.src =
-                        "https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=400&fit=crop";
-                    }}
-                  />
-                </div>
+                {/* DATE */}
+                <p style={detailText}>
+                  📅 {new Date(ev.date).toLocaleString()}
+                </p>
 
-                <div style={cardContent}>
-                  {/* TITLE */}
-                  <h3 style={eventTitle}>{ev.title}</h3>
+                {/* LOCATION */}
+                <p style={detailText}>📍 {ev.location}</p>
 
-                  {/* DATE */}
-                  <p style={detailText}>
-                    📅 {new Date(ev.date).toLocaleString()}
-                  </p>
+                {/* TYPE CHIP */}
+                <span
+                  style={{
+                    ...chip,
+                    background:
+                      ev.type === "online"
+                        ? "rgba(88,166,255,0.12)"
+                        : "rgba(35,197,94,0.12)",
+                    border:
+                      ev.type === "online"
+                        ? "1px solid rgba(88,166,255,0.4)"
+                        : "1px solid rgba(35,197,94,0.4)",
+                    color: ev.type === "online" ? "#58a6ff" : "#2ea043",
+                  }}
+                >
+                  {ev.type.toUpperCase()}
+                </span>
 
-                  {/* LOCATION */}
-                  <p style={detailText}>📍 {ev.location}</p>
-
-                  {/* TYPE CHIP */}
-                  <span
-                    style={{
-                      ...chip,
-                      background:
-                        ev.type === "online"
-                          ? "rgba(88,166,255,0.12)"
-                          : "rgba(35,197,94,0.12)",
-                      border:
-                        ev.type === "online"
-                          ? "1px solid rgba(88,166,255,0.4)"
-                          : "1px solid rgba(35,197,94,0.4)",
-                      color: ev.type === "online" ? "#58a6ff" : "#2ea043",
-                    }}
-                  >
-                    {ev.type.toUpperCase()}
-                  </span>
-
-                  {/* HOST */}
-                  <div style={hostRow}>
-                    <img
-                      src={
-                        hostData.photo ||
-                        "https://ui-avatars.com/api/?background=random&name=" +
-                          hostData.username
-                      }
-                      alt="host"
-                      style={hostAvatar}
-                      onError={(e) => {
-                        e.target.src =
-                          "https://ui-avatars.com/api/?background=random&name=" +
-                          (hostData?.username || "User");
-                      }}
-                    />
-                    <span style={hostName}>@{hostData.username}</span>
-                  </div>
+                {/* HOST */}
+                <div style={hostRow}>
+                  <img src={ev.host.photo} alt="host" style={hostAvatar} />
+                  <span style={hostName}>@{ev.host.username}</span>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
 

@@ -4,12 +4,59 @@ import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
+// --- START: Helper for responsive styles based on screen size (simulated media query) ---
+const getResponsiveStyles = () => {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 600;
+
+  return {
+    // For the main wrapper
+    mainContainer: {
+      maxWidth: 900,
+      width: "100%", // Ensure it takes full width
+      margin: "0 auto",
+      padding: isMobile ? "15px 10px" : "25px 20px", // Less padding on small screens
+      color: "#c9d1d9",
+      fontFamily: "Poppins",
+    },
+    // For the two side-by-side inputs
+    inputGroup: {
+      display: "flex",
+      flexDirection: isMobile ? "column" : "row", // Stack on mobile
+      gap: 12,
+      marginTop: 12,
+    },
+    // For the individual input fields within the group
+    groupInput: { 
+        flex: 1, 
+        minWidth: isMobile ? "auto" : 0 // Allows inputs to properly stack
+    }
+  };
+};
+
+function useResponsiveStyles() {
+  const [styles, setStyles] = useState(getResponsiveStyles());
+
+  useEffect(() => {
+    // Only run this hook logic client-side
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => setStyles(getResponsiveStyles());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return styles;
+}
+// --- END: Helper for responsive styles ---
+
 export default function Channels() {
   const [channels, setChannels] = useState([]);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const navigate = useNavigate();
+  
+  const styles = useResponsiveStyles(); // Use responsive styles hook
 
   const loadChannels = () => {
     API.get("/channel").then((res) => {
@@ -46,15 +93,7 @@ export default function Channels() {
 
   return (
     <DashboardLayout>
-      <div
-        style={{
-          maxWidth: 900,
-          margin: "0 auto",
-          padding: "25px 20px",
-          color: "#c9d1d9",
-          fontFamily: "Poppins",
-        }}
-      >
+      <div style={styles.mainContainer}>
         {/* PAGE TITLE */}
         <h1
           style={{
@@ -66,8 +105,8 @@ export default function Channels() {
         >
           Channels
         </h1>
-
-        {/* CREATE CHANNEL */}
+        
+        {/* --- CREATE CHANNEL --- */}
         <div
           style={{
             padding: 18,
@@ -88,19 +127,20 @@ export default function Channels() {
             Create a Channel
           </h3>
 
-          <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+          {/* Responsive Input Group */}
+          <div style={styles.inputGroup}>
             <input
               placeholder="channel-name (no spaces)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              style={{ ...inputStyle, flex: 1 }}
+              style={{ ...inputStyle, ...styles.groupInput }}
             />
 
             <input
               placeholder="Title (optional)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              style={{ ...inputStyle, flex: 1 }}
+              style={{ ...inputStyle, ...styles.groupInput }}
             />
           </div>
 
@@ -112,7 +152,7 @@ export default function Channels() {
             style={{
               ...inputStyle,
               width: "100%",
-              height: 90,
+              // Removed fixed height: 90 to allow it to be dynamic based on rows
               marginTop: 12,
               resize: "none",
             }}
@@ -123,7 +163,7 @@ export default function Channels() {
           </button>
         </div>
 
-        {/* CHANNEL LIST */}
+        {/* --- CHANNEL LIST --- */}
         <h3
           style={{
             marginBottom: 15,

@@ -1,26 +1,43 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Backend auto-detection (works locally + Render)
+  // Backend URL (local + Vite + Render)
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  /* ---------------- CHECK AUTH ---------------- */
+  /* ----------------------------------------------------
+     1. CLEAR STALE ?logout=success OR ?error=xyz
+     ---------------------------------------------------- */
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+
+    if (params.get("logout") || params.get("error")) {
+      window.history.replaceState({}, "", "/login");
+    }
+  }, [location.search]);
+
+  /* ----------------------------------------------------
+     2. CHECK IF USER IS ALREADY LOGGED-IN
+     ---------------------------------------------------- */
   useEffect(() => {
     fetch(`${BACKEND_URL}/auth/user`, {
       credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
+        // If authenticated, redirect to home
         if (data.authenticated) navigate("/");
       })
       .catch(() => {});
   }, []);
 
-  /* ---------------- OAUTH ---------------- */
+  /* ----------------------------------------------------
+     3. OAUTH HANDLERS
+     ---------------------------------------------------- */
   const handleGoogleLogin = () => {
     window.location.href = `${BACKEND_URL}/auth/google`;
   };
@@ -29,6 +46,9 @@ export default function Login() {
     window.location.href = `${BACKEND_URL}/auth/github`;
   };
 
+  /* ----------------------------------------------------
+     UI
+     ---------------------------------------------------- */
   return (
     <div
       style={{
@@ -82,6 +102,7 @@ export default function Login() {
             color: "#1f2328",
             fontSize: "15px",
             transition: "0.15s",
+            cursor: "pointer",
           }}
           onMouseEnter={(e) => (e.target.style.background = "#f3f4f6")}
           onMouseLeave={(e) => (e.target.style.background = "#ffffff")}
@@ -109,6 +130,7 @@ export default function Login() {
             color: "#ffffff",
             fontSize: "15px",
             transition: "0.15s",
+            cursor: "pointer",
           }}
           onMouseEnter={(e) => (e.target.style.background = "#1f2328")}
           onMouseLeave={(e) => (e.target.style.background = "#24292f")}

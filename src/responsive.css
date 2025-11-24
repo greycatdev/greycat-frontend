@@ -39,7 +39,7 @@ img {
   flex-direction: column;
 }
 
-/* Topbar */
+/* Topbar (Search/Toggle/Avatar bar) */
 .gc-topbar {
   padding: 8px 18px;
   background: #010409;
@@ -52,6 +52,13 @@ img {
   z-index: 20;
 }
 
+/* Search container adjustments (takes up space between toggle/avatar) */
+.gc-search-container {
+    flex: 1;
+    margin: 0 10px; /* Spacing from adjacent elements */
+    position: relative;
+}
+
 /* Layout content scroll */
 .gc-main-content {
   padding: 24px;
@@ -62,22 +69,60 @@ img {
 /* Hamburger only on mobile */
 .gc-mobile-toggle {
   display: none;
-  margin-right: 8px;
   cursor: pointer;
 }
 
-/* ChannelPage two-column layout hook */
+/* ChannelPage two-column layout hook (included for completeness) */
 .gc-channel-layout {
   display: flex;
   gap: 20px;
   align-items: flex-start;
 }
 
+/* Branding elements shared styles */
+.gc-brand-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gc-brand-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #30363d;
+}
+
+.gc-brand-text {
+    font-size: 20px;
+    font-weight: 600;
+    color: #c9d1d9;
+    cursor: pointer;
+}
+
+
+/* DESKTOP/DEFAULT STATES */
+
+/* New persistent mobile top bar (hidden by default) */
+.gc-mobile-brand-top {
+    display: none;
+}
+/* Header inside the sidebar drawer (hidden by default) */
+.gc-mobile-sidebar-header {
+    display: none;
+}
+/* Desktop sidebar logo (shown by default) */
+.gc-desktop-brand {
+    display: flex;
+}
+/* The legacy .gc-mobile-brand class is removed/unused for clean architecture */
+
+
 /* ===== MOBILE BREAKPOINTS ===== */
 
 @media (max-width: 900px) {
   .gc-layout {
-    flex-direction: column;
     height: 100vh;
   }
 
@@ -106,16 +151,60 @@ img {
     z-index: 30;
   }
 
+  /* FIX: Hide the regular HR in the sidebar on mobile to prevent double lines */
+  .gc-sidebar-hr {
+      display: none;
+  }
+
   /* Base padding on tablet/mobile */
   .gc-main-content {
     padding: 18px;
   }
 
+  /* Topbar (Search/Toggle/Avatar) positioning adjustment */
   .gc-topbar {
     padding: 8px 12px;
+    /* FIX: Push the search/toggle bar down below the new persistent brand header */
+    top: 50px; 
+  }
+  
+  /* FIX: New Persistent Mobile Top Bar (Always visible at the very top on mobile) */
+  .gc-mobile-brand-top {
+    display: flex;
+    background: #010409;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 14px;
+    align-items: center;
+    position: sticky;
+    top: 0; /* Stays at the absolute top */
+    z-index: 20; 
+    cursor: pointer;
   }
 
   .gc-mobile-toggle {
+    display: inline-flex;
+    margin-right: 0; /* Spacing handled by gc-search-container margin */
+  }
+
+  /* Hide desktop logo/title on mobile */
+  .gc-desktop-brand {
+      display: none !important;
+  }
+  
+  /* Show the header inside the sidebar drawer (Brand + Close button) */
+  .gc-mobile-sidebar-header {
+    display: flex;
+    background: #010409;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 14px;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+  }
+
+  /* Hide sidebar close button on desktop (used in the drawer header) */
+  .gc-close-mobile {
     display: inline-flex;
   }
 
@@ -134,10 +223,6 @@ img {
   .gc-main-content {
     padding: 14px;
   }
-
-  .gc-topbar input {
-    width: 100%;
-  }
 }
 
 /* EXTRA — Mobile spacing for better post readability */
@@ -145,58 +230,5 @@ img {
   .gc-main-content {
     padding-left: 16px !important;
     padding-right: 16px !important;
-  }
-}
-
-/* --- MOBILE BRAND BAR --- */
-.gc-mobile-brand {
-  display: none;
-  background: #010409;
-  border-bottom: 1px solid #30363d;
-  padding: 10px 14px;
-  align-items: center;
-}
-
-.gc-brand-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.gc-brand-logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid #30363d;
-}
-
-.gc-brand-text {
-  font-size: 20px;
-  font-weight: 600;
-  color: #c9d1d9;
-  cursor: pointer;
-}
-
-/* Show this only on screens <= 900px */
-@media (max-width: 900px) {
-  .gc-mobile-brand {
-    display: flex;
-  }
-
-  /* Move original topbar down */
-  .gc-topbar {
-    margin-top: 4px;
-  }
-}
-
-/* Hide sidebar close button on desktop */
-.gc-close-mobile {
-  display: none;
-}
-
-@media (max-width: 900px) {
-  .gc-close-mobile {
-    display: inline-flex;
   }
 }

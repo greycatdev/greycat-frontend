@@ -1,3 +1,4 @@
+// src/layouts/DashboardLayout.jsx
 import { useEffect, useState, useRef } from "react";
 import { API } from "../api";
 import { Link, useNavigate } from "react-router-dom";
@@ -6,6 +7,9 @@ export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
+  // MOBILE SIDEBAR STATE
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   // SEARCH STATE
   const [search, setSearch] = useState("");
   const [results, setResults] = useState({ users: [], events: [] });
@@ -13,12 +17,11 @@ export default function DashboardLayout({ children }) {
   const searchRef = useRef(null);
   const searchTimeoutRef = useRef(null);
 
-  // MOBILE SIDEBAR
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   /* ---------------- SEARCH LOGIC ---------------- */
   const runSearch = (value) => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
     if (!value.trim()) {
       setVisible(false);
@@ -33,25 +36,37 @@ export default function DashboardLayout({ children }) {
     }, 300);
   };
 
-  /* -------------- CLOSE SEARCH ON CLICK OUTSIDE -------------- */
+  /* -------------- CLOSE SEARCH ON CLICK OUTSIDE (and sidebar) -------------- */
   useEffect(() => {
     const handleClick = (e) => {
+      // Close search dropdown if click is outside search bar
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setVisible(false);
+      }
+
+      // Close sidebar if it's open and click is on the backdrop
+      const isClickOnBackdrop = e.target.classList.contains('gc-sidebar-backdrop');
+      if (isSidebarOpen && isClickOnBackdrop) {
+        setIsSidebarOpen(false);
       }
     };
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
-  }, []);
+  }, [isSidebarOpen]);
 
-  /* -------------- ESC KEY -------------- */
+  /* -------------- ESC KEY CLOSES SEARCH AND SIDEBAR -------------- */
   useEffect(() => {
-    const handler = (e) => e.key === "Escape" && setVisible(false);
+    const handler = (e) => {
+      if (e.key === "Escape") {
+        setVisible(false);
+        setIsSidebarOpen(false);
+      }
+    }
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* ---------------- LOAD USER ---------------- */
+  /* ---------------- LOAD AUTH USER ---------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (!res.data.authenticated) return navigate("/login");
@@ -59,28 +74,12 @@ export default function DashboardLayout({ children }) {
     });
   }, []);
 
-  const BACKEND_URL =
-    import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
-
-  const handleLogout = async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/auth/logout`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        window.location.href = "/login";
-      }
-    } catch (err) {
-      console.error("Logout error:", err);
-      window.location.href = "/login";
-    }
-  };
-
   if (!user)
     return (
       <div
         style={{
           padding: 40,
+          fontFamily: "Poppins, system-ui, sans-serif",
           background: "#0d1117",
           color: "#c9d1d9",
           minHeight: "100vh",
@@ -91,200 +90,171 @@ export default function DashboardLayout({ children }) {
     );
 
   return (
-    <div className="gc-layout">
-      {/* ===== MOBILE BACKDROP ===== */}
-      {mobileOpen && (
-        <div
-          className="gc-sidebar-backdrop"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
+    <>
+      {/* Mobile Sidebar Backdrop - ONLY visible when isSidebarOpen */}
+      {isSidebarOpen && <div className="gc-sidebar-backdrop" onClick={() => setIsSidebarOpen(false)} />}
 
-      {/* ================= SIDEBAR ================= */}
-      <aside
-        className={`gc-sidebar ${mobileOpen ? "gc-sidebar--open" : ""}`}
-        style={{
-          padding: "18px",
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-        }}
-      >
-        {/* SIDEBAR HEADER */}
-        <div
+      {/* Main Layout Container */}
+      <div className="gc-layout">
+
+        {/* ================= SIDEBAR ================= */}
+        <aside
+          className={`gc-sidebar ${isSidebarOpen ? 'gc-sidebar--open' : ''}`}
           style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 10,
-            justifyContent: "space-between",
+              background: "#010409",
+              borderRight: "1px solid #30363d",
+              padding: "18px 18px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center" }}>
+          {/* 1. Mobile Sidebar Header (Brand + Close Button) - Shown only when sidebar is open on mobile */}
+          <div className="gc-mobile-sidebar-header">
+            <div className="gc-brand-left">
+              <img
+                src="./icons/greycat.jpeg"
+                className="gc-brand-logo"
+                alt="Greycat Logo"
+              />
+              <span className="gc-brand-text">Greycat</span>
+            </div>
+            <button
+              className="gc-close-mobile"
+              onClick={() => setIsSidebarOpen(false)}
+              style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#c9d1d9', fontSize: 24, cursor: 'pointer' }}
+            >
+              &times;
+            </button>
+          </div>
+
+
+          {/* 2. Desktop Brand/Logo (Hidden on Mobile) */}
+          <div
+            className="gc-desktop-brand"
+            style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: 10,
+            }}
+          >
             <div
               style={{
                 width: 26,
                 height: 26,
                 borderRadius: "50%",
-                overflow: "hidden",
                 background: "#161b22",
                 border: "1px solid #30363d",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 marginRight: 8,
+                overflow: "hidden",
               }}
             >
               <img
-                src="/icons/greycat.jpeg"
-                alt="greycat"
-                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                src="./icons/greycat.jpeg"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
               />
             </div>
             Greycat
           </div>
 
-          {/* CLOSE (mobile only) */}
-          <button
-            onClick={() => setMobileOpen(false)}
-            className="gc-close-mobile"
+          {/* HR separator (hidden on mobile via CSS) */}
+          <hr
+            className="gc-sidebar-hr"
             style={{
               border: "none",
-              background: "transparent",
-              color: "#8b949e",
-              fontSize: 22,
-              cursor: "pointer",
+              height: 1,
+              background: "#30363d",
+              margin: "8px 0 10px 0",
             }}
-          >
-            ✕
-          </button>
-        </div>
+          />
 
-        <hr
-          style={{
-            border: "none",
-            height: 1,
-            background: "#30363d",
-            margin: "8px 0 10px 0",
-          }}
-        />
+          <SidebarItem to="/" label="Home" icon="home.svg" />
+          <SidebarItem to="/explore" label="Explore" icon="explore.svg" />
+          <SidebarItem to="/events" label="Events" icon="calendar.svg" />
+          <SidebarItem to={`/${user.username}`} label="Profile" icon="user.svg" />
+          <SidebarItem to="/projects" label="Projects" icon="folder.svg" />
+          <SidebarItem
+            to="/import/github"
+            label="Import GitHub"
+            icon="github.svg"
+          />
+          <SidebarItem to="/channels" label="Channels" icon="folder.svg" />
+          <SidebarItem to="/create-post" label="Create Post" icon="plus.svg" />
+          <SidebarItem to="/create-project" label="Add Project" icon="plus.svg" />
+          <SidebarItem to="/settings" label="Settings" icon="settings.svg" />
 
-        {/* SIDEBAR LINKS */}
-        <SidebarItem
-          to="/"
-          icon="home.svg"
-          label="Home"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/explore"
-          icon="explore.svg"
-          label="Explore"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/events"
-          icon="calendar.svg"
-          label="Events"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to={`/${user.username}`}
-          icon="user.svg"
-          label="Profile"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/projects"
-          icon="folder.svg"
-          label="Projects"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/import/github"
-          icon="github.svg"
-          label="Import GitHub"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/channels"
-          icon="folder.svg"
-          label="Channels"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/create-post"
-          icon="plus.svg"
-          label="Create Post"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/create-project"
-          icon="plus.svg"
-          label="Add Project"
-          onClickMobile={() => setMobileOpen(false)}
-        />
-        <SidebarItem
-          to="/settings"
-          icon="settings.svg"
-          label="Settings"
-          onClickMobile={() => setMobileOpen(false)}
-        />
+          <div style={{ flexGrow: 1 }} />
 
-        <div style={{ flexGrow: 1 }} />
-
-        {/* LOGOUT */}
-        <button
-          onClick={handleLogout}
-          style={{
-            width: "100%",
-            padding: "8px 10px",
-            borderRadius: 6,
-            background: "#21262d",
-            border: "1px solid #30363d",
-            color: "#f0f6fc",
-            cursor: "pointer",
-          }}
-        >
-          Logout
-        </button>
-      </aside>
-
-      {/* ================= MAIN AREA ================= */}
-      <div className="gc-main">
-        {/* MOBILE BRAND BAR */}
-        <div className="gc-mobile-brand">
-          <div className="gc-brand-left" onClick={() => navigate("/")}>
-            <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
-            <span className="gc-brand-text">GreyCat</span>
-          </div>
-        </div>
-
-        {/* TOPBAR */}
-        <div className="gc-topbar">
-          {/* LEFT SIDE */}
-          <div
+          {/* Logout button */}
+          <button
+            onClick={() =>
+              (window.location.href = "http://localhost:5000/auth/logout")
+            }
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
               width: "100%",
+              padding: "8px 10px",
+              borderRadius: 6,
+              textAlign: "center",
+              color: "#f0f6fc",
+              background: "#21262d",
+              border: "1px solid #30363d",
+              fontSize: 13,
+              fontWeight: 500,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#f85149";
+              e.currentTarget.style.borderColor = "#ff7b72";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#21262d";
+              e.currentTarget.style.borderColor = "#30363d";
             }}
           >
-            {/* Hamburger */}
-            <button
-              className="gc-mobile-toggle"
-              onClick={() => setMobileOpen(true)}
-              style={{
-                border: "none",
-                background: "transparent",
-                fontSize: 20,
-                color: "#c9d1d9",
-              }}
-            >
-              ☰
-            </button>
+            Logout
+          </button>
+        </aside>
 
-            {/* Search */}
+        {/* ================= MAIN AREA ================= */}
+        <div className="gc-main">
+
+          {/* -------- NEW MOBILE TOP NAVBAR (User Request) -------- */}
+          <div className="gc-mobile-brand-top" onClick={() => navigate('/')}>
+            <div className="gc-brand-left">
+              <img
+                src="./icons/greycat.jpeg"
+                className="gc-brand-logo"
+                alt="Greycat Logo"
+              />
+              <span className="gc-brand-text">Greycat</span>
+            </div>
+          </div>
+          {/* -------- TOP NAV (Search, Toggle, Avatar) -------- */}
+          <div className="gc-topbar">
+            {/* Mobile Hamburger Icon */}
+            <div className="gc-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
+              <svg
+                  viewBox="0 0 24 24"
+                  width="24"
+                  height="24"
+                  fill="currentColor"
+                  style={{ display: 'block' }}
+              >
+                  <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+              </svg>
+            </div>
+
+            {/* Search container - takes up remaining space */}
             <div
-              style={{ width: "100%", position: "relative", maxWidth: 480 }}
-              ref={searchRef}
+                style={{ position: "relative", flex: 1, margin: '0 10px' }}
+                ref={searchRef}
+                className="gc-search-container"
             >
               <input
                 placeholder="Search users, events..."
@@ -298,12 +268,14 @@ export default function DashboardLayout({ children }) {
                   padding: "6px 10px",
                   borderRadius: 6,
                   border: "1px solid #30363d",
+                  fontSize: 14,
                   background: "#0d1117",
                   color: "#c9d1d9",
+                  outline: "none",
                 }}
               />
 
-              {/* Search results */}
+              {/* Search dropdown */}
               {visible && (
                 <div
                   style={{
@@ -313,43 +285,55 @@ export default function DashboardLayout({ children }) {
                     background: "#161b22",
                     border: "1px solid #30363d",
                     borderRadius: 6,
+                    boxShadow: "0 8px 24px rgba(1,4,9,0.85)",
                     maxHeight: 320,
                     overflowY: "auto",
                     zIndex: 100,
                   }}
                 >
                   {results.users.length === 0 && results.events.length === 0 ? (
-                    <p style={{ padding: 10, color: "#8b949e", fontSize: 13 }}>
+                    <p
+                      style={{
+                        padding: 10,
+                        color: "#8b949e",
+                        fontSize: 13,
+                      }}
+                    >
                       No results found
                     </p>
                   ) : (
                     <>
+                      {/* USERS SECTION */}
                       {results.users.length > 0 && (
                         <div>
                           <p
                             style={{
-                              padding: 6,
+                              padding: "6px 10px",
                               fontSize: 11,
                               color: "#6e7681",
+                              textTransform: "uppercase",
+                              letterSpacing: 0.04,
                             }}
                           >
                             Users
                           </p>
+
                           {results.users.map((u) => (
                             <SearchItem
                               key={u._id}
                               onClick={() => {
                                 navigate(`/${u.username}`);
-                                setVisible(false);
-                                setSearch("");
+                                setVisible(false); // Close search dropdown
                               }}
                             >
                               <img
                                 src={u.photo}
+                                alt={u.username}
                                 style={{
                                   width: 24,
                                   height: 24,
                                   borderRadius: "50%",
+                                  objectFit: "cover",
                                 }}
                               />
                               @{u.username}
@@ -358,24 +342,27 @@ export default function DashboardLayout({ children }) {
                         </div>
                       )}
 
+                      {/* EVENTS SECTION */}
                       {results.events.length > 0 && (
                         <div>
                           <p
                             style={{
-                              padding: 6,
+                              padding: "6px 10px",
                               fontSize: 11,
                               color: "#6e7681",
+                              textTransform: "uppercase",
+                              letterSpacing: 0.04,
                             }}
                           >
                             Events
                           </p>
+
                           {results.events.map((ev) => (
                             <SearchItem
                               key={ev._id}
                               onClick={() => {
                                 navigate(`/event/${ev._id}`);
-                                setVisible(false);
-                                setSearch("");
+                                setVisible(false); // Close search dropdown
                               }}
                             >
                               {ev.title}
@@ -388,74 +375,86 @@ export default function DashboardLayout({ children }) {
                 </div>
               )}
             </div>
+
+            {/* Avatar */}
+            <img
+              src={user.photo}
+              onClick={() => navigate(`/${user.username}`)}
+              alt="avatar"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                objectFit: "cover",
+                cursor: "pointer",
+                border: "1px solid #30363d",
+              }}
+            />
           </div>
 
-          {/* Avatar */}
-          <img
-            src={user.photo}
-            onClick={() => navigate(`/${user.username}`)}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              cursor: "pointer",
-              border: "1px solid #30363d",
-              marginLeft: 12,
-            }}
-          />
+          {/* -------- PAGE CONTENT -------- */}
+          <main className="gc-main-content">
+            {children}
+          </main>
         </div>
-
-        {/* PAGE CONTENT */}
-        <main className="gc-main-content">{children}</main>
       </div>
-    </div>
+    </>
   );
 }
 
-/* ============ SIDEBAR ITEM ============ */
-function SidebarItem({ to, icon, label, onClickMobile }) {
-  return (
-    <Link
-      to={to}
-      onClick={onClickMobile}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "6px 8px",
-        fontSize: 14,
-        color: "#c9d1d9",
-        borderRadius: 6,
-        marginBottom: 2,
-        textDecoration: "none",
-      }}
-    >
-      <img
-        src={`/icons/${icon}`}
-        width={18}
-        height={18}
-        style={{ filter: "invert(80%)" }}
-      />
-      {label}
-    </Link>
-  );
-}
+// SidebarItem and SearchItem components remain the same...
+function SidebarItem({ to, icon, label }) {
+    return (
+      <Link
+        to={to}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "6px 8px",
+          fontSize: 14,
+          color: "#c9d1d9",
+          borderRadius: 6,
+          marginBottom: 2,
+          textDecoration: 'none',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = "#161b22";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+        }}
+      >
+        <img
+          src={`/icons/${icon}`}
+          width="18"
+          height="18"
+          style={{ opacity: 0.9, filter: "invert(80%)" }}
+          alt=""
+        />
+        {label}
+      </Link>
+    );
+  }
 
-/* ============ SEARCH ITEM ============ */
-function SearchItem({ children, onClick }) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        padding: "6px 10px",
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        cursor: "pointer",
-        fontSize: 13,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
+  function SearchItem({ children, onClick }) {
+    return (
+      <div
+        onClick={onClick}
+        style={{
+          padding: "6px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          cursor: "pointer",
+          fontSize: 13,
+          color: "#c9d1d9",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.background = "#21262d")}
+        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      >
+        {children}
+      </div>
+    );
+  }
+

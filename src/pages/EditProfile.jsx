@@ -18,6 +18,15 @@ export default function EditProfile() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [uploading, setUploading] = useState(false);
 
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  /* ---------- RESPONSIVE LISTENER ---------- */
+  useEffect(() => {
+    const r = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", r);
+    return () => window.removeEventListener("resize", r);
+  }, []);
+
   /* ---------------- LOAD USER ---------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
@@ -70,9 +79,7 @@ export default function EditProfile() {
   };
 
   if (!user)
-    return (
-      <div style={{ color: "white", padding: 40 }}>Loading…</div>
-    );
+    return <div style={{ color: "white", padding: 40 }}>Loading…</div>;
 
   return (
     <div
@@ -93,29 +100,28 @@ export default function EditProfile() {
         style={{
           width: "100%",
           maxWidth: 650,
+          padding: "0 16px",
         }}
       >
         <h2 style={{ fontSize: 26, marginBottom: 30 }}>Edit Profile</h2>
 
         {/* ---------- PROFILE PICTURE ---------- */}
         <div style={{ marginBottom: 30 }}>
-          <label
+          <label style={label}>Profile Picture</label>
+
+          <div
             style={{
-              color: "#8b949e",
-              marginBottom: 8,
-              display: "block",
-              fontSize: 14,
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "center" : "flex-start",
+              gap: 20,
             }}
           >
-            Profile Picture
-          </label>
-
-          <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
             <img
               src={photoPreview || "/default-avatar.png"}
               style={{
-                width: 90,
-                height: 90,
+                width: 100,
+                height: 100,
                 borderRadius: "50%",
                 objectFit: "cover",
                 border: "2px solid #30363d",
@@ -130,6 +136,8 @@ export default function EditProfile() {
                 borderRadius: 6,
                 cursor: "pointer",
                 fontSize: 14,
+                width: isMobile ? "100%" : "auto",
+                textAlign: "center",
               }}
             >
               {uploading ? "Uploading..." : "Change Photo"}
@@ -172,9 +180,7 @@ export default function EditProfile() {
           <label style={label}>GitHub</label>
           <input
             value={social.github}
-            onChange={(e) =>
-              setSocial({ ...social, github: e.target.value })
-            }
+            onChange={(e) => setSocial({ ...social, github: e.target.value })}
             style={input}
           />
         </div>
@@ -183,9 +189,7 @@ export default function EditProfile() {
           <label style={label}>LinkedIn</label>
           <input
             value={social.linkedin}
-            onChange={(e) =>
-              setSocial({ ...social, linkedin: e.target.value })
-            }
+            onChange={(e) => setSocial({ ...social, linkedin: e.target.value })}
             style={input}
           />
         </div>
@@ -194,9 +198,7 @@ export default function EditProfile() {
           <label style={label}>Instagram</label>
           <input
             value={social.instagram}
-            onChange={(e) =>
-              setSocial({ ...social, instagram: e.target.value })
-            }
+            onChange={(e) => setSocial({ ...social, instagram: e.target.value })}
             style={input}
           />
         </div>
@@ -205,14 +207,19 @@ export default function EditProfile() {
           <label style={label}>Website</label>
           <input
             value={social.website}
-            onChange={(e) =>
-              setSocial({ ...social, website: e.target.value })
-            }
+            onChange={(e) => setSocial({ ...social, website: e.target.value })}
             style={input}
           />
         </div>
 
-        <button onClick={saveChanges} style={saveBtn}>
+        {/* SAVE BUTTON */}
+        <button
+          onClick={saveChanges}
+          style={{
+            ...saveBtn,
+            width: isMobile ? "100%" : "100%",
+          }}
+        >
           Save Changes
         </button>
       </div>
@@ -242,7 +249,6 @@ const label = {
 
 const saveBtn = {
   marginTop: 30,
-  width: "100%",
   padding: "12px",
   fontSize: 16,
   background: "#238636",

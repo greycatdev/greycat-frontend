@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { API } from "../api";
 
@@ -8,30 +8,33 @@ export default function GithubImport() {
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Define GitHub-style dark mode colors
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  // Listen for screen resizing
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  /* ------------------------------------
+     GitHub Dark Mode Color Palette
+  ------------------------------------ */
   const githubColors = {
-    // Primary background
     backgroundPrimary: "#0D1117",
-    // Secondary background (for input, repo items)
     backgroundSecondary: "#161B22",
-    // Text color
     textPrimary: "#C9D1D9",
-    // Subtle text/description color
     textSecondary: "#8B949E",
-    // Border color
     border: "#30363D",
-    // Accent/Link color (used for 'Fetch Repos' button)
-    accentBlue: "#238636", // A green similar to GitHub's primary button
-    // Import button color
-    importPurple: "#087423ff", // A purple/pink for the import action
-    // Selected repo highlight color
+    accentBlue: "#238636",
+    importPurple: "#087423ff",
     selectedBackground: "rgba(51, 255, 36, 0.04)",
     selectedBorder: "#1bd478ff",
   };
 
-  /* ------------------------------------------------------
-      FETCH REPOSITORIES
-  ------------------------------------------------------ */
+  /* ------------------------------------
+     FETCH REPOS
+  ------------------------------------ */
   const fetchRepos = async () => {
     if (!username.trim()) return alert("Enter a GitHub username!");
 
@@ -43,9 +46,9 @@ export default function GithubImport() {
     else alert("GitHub user not found");
   };
 
-  /* ------------------------------------------------------
-      SELECT / UNSELECT REPO
-  ------------------------------------------------------ */
+  /* ------------------------------------
+     SELECT / UNSELECT
+  ------------------------------------ */
   const toggleSelect = (repo) => {
     if (selected.includes(repo.url)) {
       setSelected(selected.filter((r) => r !== repo.url));
@@ -54,18 +57,15 @@ export default function GithubImport() {
     }
   };
 
-  /* ------------------------------------------------------
-      IMPORT SELECTED
-  ------------------------------------------------------ */
+  /* ------------------------------------
+     IMPORT PROJECTS
+  ------------------------------------ */
   const importProjects = async () => {
-    if (selected.length === 0)
-      return alert("Select at least 1 repository!");
+    if (selected.length === 0) return alert("Select at least 1 repository!");
 
     const selectedRepos = repos.filter((r) => selected.includes(r.url));
 
-    const res = await API.post("/github/import", {
-      repos: selectedRepos,
-    });
+    const res = await API.post("/github/import", { repos: selectedRepos });
 
     if (res.data.success) {
       alert("Projects imported!");
@@ -76,38 +76,39 @@ export default function GithubImport() {
   };
 
   return (
-    // Assuming DashboardLayout sets the main background to backgroundPrimary
     <DashboardLayout>
-      <div 
-        style={{ 
-          maxWidth: 700, 
-          margin: "0 auto", 
-          fontFamily: "sans-serif", // Using a common web font like GitHub
-          color: githubColors.textPrimary 
+      <div
+        style={{
+          maxWidth: 700,
+          margin: "0 auto",
+          padding: "0 15px",
+          color: githubColors.textPrimary,
+          fontFamily: "sans-serif",
         }}
       >
-        
         {/* TITLE */}
         <h2
           style={{
-            fontSize: 28,
+            fontSize: isMobile ? 24 : 28,
             marginBottom: 25,
             color: githubColors.textPrimary,
             fontWeight: 600,
-            borderBottom: `1px solid ${githubColors.border}`, // Subtle separator
+            borderBottom: `1px solid ${githubColors.border}`,
             paddingBottom: 15,
             marginTop: 0,
+            textAlign: isMobile ? "center" : "left",
           }}
         >
           Import from GitHub
         </h2>
 
-        {/* USERNAME INPUT */}
+        {/* INPUT + BUTTON */}
         <div
           style={{
             display: "flex",
+            flexDirection: isMobile ? "column" : "row",
             gap: 12,
-            alignItems: "center",
+            alignItems: "stretch",
             marginBottom: 30,
           }}
         >
@@ -118,18 +119,20 @@ export default function GithubImport() {
             style={{
               flex: 1,
               padding: "12px 14px",
-              borderRadius: 6, // Slightly smaller radius
+              borderRadius: 6,
               background: githubColors.backgroundSecondary,
               color: githubColors.textPrimary,
               border: `1px solid ${githubColors.border}`,
               outline: "none",
               fontSize: 16,
-              // Focus state similar to GitHub
-              boxShadow: 'none',
-              transition: 'border-color 0.2s',
+              width: "100%",
             }}
-            onFocus={(e) => (e.currentTarget.style.borderColor = githubColors.selectedBorder)}
-            onBlur={(e) => (e.currentTarget.style.borderColor = githubColors.border)}
+            onFocus={(e) =>
+              (e.currentTarget.style.borderColor = githubColors.selectedBorder)
+            }
+            onBlur={(e) =>
+              (e.currentTarget.style.borderColor = githubColors.border)
+            }
           />
 
           <button
@@ -137,21 +140,23 @@ export default function GithubImport() {
             disabled={loading}
             style={{
               padding: "12px 20px",
-              background: loading ? githubColors.border : githubColors.accentBlue,
+              background: loading
+                ? githubColors.border
+                : githubColors.accentBlue,
               border: `1px solid ${githubColors.accentBlue}`,
               color: githubColors.textPrimary,
               borderRadius: 6,
-              cursor: loading ? 'not-allowed' : "pointer",
+              cursor: loading ? "not-allowed" : "pointer",
               fontWeight: 500,
               fontSize: 16,
-              transition: "0.2s",
-              boxShadow: 'none',
+              width: isMobile ? "100%" : "auto",
             }}
             onMouseEnter={(e) => {
-              if (!loading) e.currentTarget.style.background = "#2ea043"; // Darker green on hover
+              if (!loading) e.currentTarget.style.background = "#2ea043";
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.background = githubColors.accentBlue;
+              if (!loading) e.currentTarget.style.background =
+                githubColors.accentBlue;
             }}
           >
             {loading ? "Loading..." : "Fetch Repos"}
@@ -183,7 +188,7 @@ export default function GithubImport() {
                 onMouseEnter={(e) => {
                   if (!isSelected)
                     e.currentTarget.style.border =
-                      `1px solid ${githubColors.textSecondary}`; // Slightly brighter border on hover
+                      `1px solid ${githubColors.textSecondary}`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.border = isSelected
@@ -202,7 +207,13 @@ export default function GithubImport() {
                   {repo.name}
                 </b>
 
-                <p style={{ margin: "6px 0 6px 0", color: githubColors.textSecondary, fontSize: 14 }}>
+                <p
+                  style={{
+                    margin: "6px 0",
+                    color: githubColors.textSecondary,
+                    fontSize: 14,
+                  }}
+                >
                   {repo.description || "No description"}
                 </p>
 
@@ -210,7 +221,7 @@ export default function GithubImport() {
                   style={{
                     fontSize: 12,
                     padding: "3px 8px",
-                    borderRadius: 15, // Pill shape for language tag
+                    borderRadius: 15,
                     background: githubColors.border,
                     color: githubColors.textSecondary,
                   }}
@@ -235,14 +246,14 @@ export default function GithubImport() {
                 marginTop: 25,
                 fontWeight: 600,
                 fontSize: 16,
-                transition: "0.2s",
-                boxShadow: '0 0 0 transparent',
+                width: isMobile ? "100%" : "auto",
               }}
               onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#2d8b10ff") // Lighter purple on hover
+                (e.currentTarget.style.background = "#2d8b10ff")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.background = githubColors.importPurple)
+                (e.currentTarget.style.background =
+                  githubColors.importPurple)
               }
             >
               Import Selected Projects →
