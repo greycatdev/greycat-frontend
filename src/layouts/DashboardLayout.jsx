@@ -194,31 +194,32 @@ export default function DashboardLayout({ children }) {
 
           {/* Logout button */}
           <button
-            onClick={() =>
-              (window.location.href = "http://localhost:5000/auth/logout")
-            }
-            style={{
-              width: "100%",
-              padding: "8px 10px",
-              borderRadius: 6,
-              textAlign: "center",
-              color: "#f0f6fc",
-              background: "#21262d",
-              border: "1px solid #30363d",
-              fontSize: 13,
-              fontWeight: 500,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#f85149";
-              e.currentTarget.style.borderColor = "#ff7b72";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#21262d";
-              e.currentTarget.style.borderColor = "#30363d";
-            }}
-          >
-            Logout
-          </button>
+  onClick={() =>
+    (window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`)
+  }
+  style={{
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 6,
+    textAlign: "center",
+    color: "#f0f6fc",
+    background: "#21262d",
+    border: "1px solid #30363d",
+    fontSize: 13,
+    fontWeight: 500,
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.background = "#f85149";
+    e.currentTarget.style.borderColor = "#ff7b72";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.background = "#21262d";
+    e.currentTarget.style.borderColor = "#30363d";
+  }}
+>
+  Logout
+</button>
+
         </aside>
 
         {/* ================= MAIN AREA ================= */}
