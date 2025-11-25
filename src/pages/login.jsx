@@ -1,9 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -17,17 +19,46 @@ export default function Login() {
     }
   }, [location.search]);
 
-  // Check login
+  // Check login status (fixed)
   useEffect(() => {
-    fetch(`${BACKEND_URL}/auth/user`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.authenticated) navigate("/");
-      })
-      .catch(() => {});
+    async function verifyLogin() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/auth/user`, {
+          credentials: "include",
+        });
+
+        const data = await res.json();
+
+        // ONLY redirect if user is definitely logged in
+        if (data.authenticated === true) {
+          navigate("/");
+        }
+      } catch (err) {
+        console.log("Auth check failed");
+      } finally {
+        setCheckingAuth(false); // allow page to render
+      }
+    }
+
+    verifyLogin();
   }, []);
+
+  if (checkingAuth) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "18px",
+          color: "#888",
+        }}
+      >
+        Checking login...
+      </div>
+    );
+  }
 
   const handleGoogleLogin = () => {
     window.location.href = `${BACKEND_URL}/auth/google`;

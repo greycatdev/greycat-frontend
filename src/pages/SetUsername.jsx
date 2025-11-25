@@ -13,9 +13,7 @@ export default function SetUsername() {
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  /* ----------------------------------------------------
-     1. CLEAR ?logout or ?error IN CASE USER CAME HERE
-  ---------------------------------------------------- */
+  /* CLEAR ?logout or ?error */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("logout") || params.get("error")) {
@@ -23,38 +21,29 @@ export default function SetUsername() {
     }
   }, [location.search]);
 
-  /* ----------------------------------------------------
-     2. LOAD USER STATUS
-  ---------------------------------------------------- */
+  /* LOAD USER STATUS */
   useEffect(() => {
     fetch(`${BACKEND_URL}/auth/user`, { credentials: "include" })
       .then((res) => res.json())
       .then((data) => {
         if (!data.authenticated) return navigate("/login");
-
         setUserId(data.user._id);
-
-        // If user already set username (rare redirect case)
         if (data.user.username) return navigate("/");
       })
       .catch(() => navigate("/login"));
   }, []);
 
-  /* ----------------------------------------------------
-     3. VALIDATION
-  ---------------------------------------------------- */
+  /* VALIDATION */
   const validateFormat = (name) => /^[a-zA-Z0-9._]+$/.test(name);
 
-  /* ----------------------------------------------------
-     4. CHECK USERNAME
-  ---------------------------------------------------- */
+  /* CHECK USERNAME */
   const checkUsername = async () => {
     const trimmed = username.trim().toLowerCase();
-
     if (!trimmed) return alert("Username cannot be empty.");
-
     if (!validateFormat(trimmed)) {
-      alert("Username can contain letters, numbers, dot (.) and underscore (_) only.");
+      alert(
+        "Username can contain letters, numbers, dot (.) and underscore (_) only."
+      );
       return;
     }
 
@@ -63,24 +52,19 @@ export default function SetUsername() {
     try {
       const res = await fetch(`${BACKEND_URL}/user/check-username/${trimmed}`);
       const data = await res.json();
-
       setAvailable(!data.exists);
-    } catch (err) {
+    } catch {
       alert("Error checking username.");
     }
 
     setChecking(false);
   };
 
-  /* ----------------------------------------------------
-     5. SAVE USERNAME
-  ---------------------------------------------------- */
+  /* SAVE */
   const saveUsername = async () => {
-    if (!available) return;
-    if (!userId) return;
+    if (!available || !userId) return;
 
     const trimmed = username.trim().toLowerCase();
-
     const res = await fetch(`${BACKEND_URL}/user/set-username`, {
       method: "POST",
       credentials: "include",
@@ -89,34 +73,32 @@ export default function SetUsername() {
     });
 
     const data = await res.json();
-    if (data.success) {
-      navigate("/");
-    } else {
-      alert(data.message || "Error saving username");
-    }
+    if (data.success) navigate("/");
+    else alert(data.message || "Error saving username");
   };
 
-  /* ----------------------------------------------------
-     UI
-  ---------------------------------------------------- */
+  /* UI */
   return (
     <div
       style={{
-        height: "100vh",
-        width: "100vw",
+        minHeight: "100vh",
+        width: "100%",
         background: "#0d1117",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "20px", // ⭐ LEFT & RIGHT spacing for mobile
+        boxSizing: "border-box",
         fontFamily: "Poppins, sans-serif",
         color: "#c9d1d9",
       }}
     >
       <div
         style={{
-          width: 420,
+          width: "100%",
+          maxWidth: 420, // ⭐ perfect for laptop & shrinks on mobile
           background: "#161b22",
-          padding: "36px",
+          padding: "32px",
           borderRadius: 12,
           border: "1px solid #30363d",
           boxShadow: "0 0 8px rgba(0,0,0,0.4)",
@@ -124,20 +106,36 @@ export default function SetUsername() {
       >
         <h1
           style={{
-            fontSize: 24,
+            fontSize: 22,
             color: "#f0f6fc",
-            marginBottom: 4,
+            marginBottom: 6,
             fontWeight: 600,
+            textAlign: "center",
           }}
         >
           Pick your username
         </h1>
 
-        <p style={{ marginTop: 0, marginBottom: 24, fontSize: 14, color: "#8b949e" }}>
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: 20,
+            fontSize: 14,
+            color: "#8b949e",
+            textAlign: "center",
+          }}
+        >
           This will be your unique identity on GreyCat.
         </p>
 
-        <label style={{ fontSize: 14, marginBottom: 6, display: "block", color: "#8b949e" }}>
+        <label
+          style={{
+            fontSize: 14,
+            marginBottom: 6,
+            display: "block",
+            color: "#8b949e",
+          }}
+        >
           Username
         </label>
 
@@ -167,7 +165,9 @@ export default function SetUsername() {
           }}
         />
 
-        {checking && <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>}
+        {checking && (
+          <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>
+        )}
 
         {available === true && (
           <p style={{ color: "#2ea043", marginTop: 8, fontSize: 14 }}>
