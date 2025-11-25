@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { API } from "../api";
 
-
 export default function GithubImport() {
   const [username, setUsername] = useState("");
   const [repos, setRepos] = useState([]);
@@ -65,14 +64,27 @@ export default function GithubImport() {
     if (selected.length === 0) return alert("Select at least 1 repository!");
 
     const selectedRepos = repos.filter((r) => selected.includes(r.url));
+    // Ensure user is authenticated before import
+    const authRes = await API.get("/auth/user");
+    if (!authRes.data.authenticated) {
+      alert("Please log in to import projects");
+      window.location.href = "/login";
+      return;
+    }
 
     const res = await API.post("/github/import", { repos: selectedRepos });
+
+    if (res.status === 401 || res.data?.message === "Not authenticated") {
+      alert("Please log in to import projects");
+      window.location.href = "/login";
+      return;
+    }
 
     if (res.data.success) {
       alert("Projects imported!");
       window.location.href = "/projects";
     } else {
-      alert("Import failed");
+      alert(res.data.message || "Import failed");
     }
   };
 
@@ -156,8 +168,8 @@ export default function GithubImport() {
               if (!loading) e.currentTarget.style.background = "#2ea043";
             }}
             onMouseLeave={(e) => {
-              if (!loading) e.currentTarget.style.background =
-                githubColors.accentBlue;
+              if (!loading)
+                e.currentTarget.style.background = githubColors.accentBlue;
             }}
           >
             {loading ? "Loading..." : "Fetch Repos"}
@@ -188,8 +200,7 @@ export default function GithubImport() {
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected)
-                    e.currentTarget.style.border =
-                      `1px solid ${githubColors.textSecondary}`;
+                    e.currentTarget.style.border = `1px solid ${githubColors.textSecondary}`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.border = isSelected
@@ -253,8 +264,7 @@ export default function GithubImport() {
                 (e.currentTarget.style.background = "#2d8b10ff")
               }
               onMouseLeave={(e) =>
-                (e.currentTarget.style.background =
-                  githubColors.importPurple)
+                (e.currentTarget.style.background = githubColors.importPurple)
               }
             >
               Import Selected Projects →

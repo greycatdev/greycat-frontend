@@ -16,9 +16,22 @@ export default function Projects() {
     API.get("/auth/user").then((res) => {
       if (res.data.authenticated) {
         setUser(res.data.user);
-        API.get(`/project/user/${res.data.user.username}`).then((r) => {
-          if (r.data.success) setProjects(r.data.projects);
-        });
+        // If user has a username, fetch by username for compatibility; otherwise, use /project/mine
+        if (res.data.user?.username) {
+          API.get(`/project/user/${res.data.user.username}`).then((r) => {
+            if (r.data.success) setProjects(r.data.projects);
+            else {
+              // fallback to /mine if username-based fetch failed
+              API.get("/project/mine").then((rm) => {
+                if (rm.data.success) setProjects(rm.data.projects);
+              });
+            }
+          });
+        } else {
+          API.get("/project/mine").then((rm) => {
+            if (rm.data.success) setProjects(rm.data.projects);
+          });
+        }
       }
     });
   }, []);
@@ -217,14 +230,12 @@ export default function Projects() {
                     transition: "0.2s",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255,0,120,0.12)";
+                    e.currentTarget.style.background = "rgba(255,0,120,0.12)";
                     e.currentTarget.style.border =
                       "1px solid rgba(255,0,120,0.5)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      "rgba(255,0,120,0.08)";
+                    e.currentTarget.style.background = "rgba(255,0,120,0.08)";
                     e.currentTarget.style.border =
                       "1px solid rgba(255,0,120,0.3)";
                   }}
