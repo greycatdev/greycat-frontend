@@ -89,7 +89,7 @@ export default function GithubImport() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div
         style={{
           maxWidth: 700,

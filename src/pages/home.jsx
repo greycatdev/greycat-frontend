@@ -41,7 +41,7 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div
         style={{
           maxWidth: 650,

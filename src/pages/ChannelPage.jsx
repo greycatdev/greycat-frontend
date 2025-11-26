@@ -195,7 +195,7 @@ export default function ChannelPage() {
     borderRadius: 8,
     background: palette.bgCard,
     color: palette.textMain,
-    boxSizing: "border-box"
+    boxSizing: "border-box",
   };
 
   const leaveBtnStyle = {
@@ -250,7 +250,7 @@ export default function ChannelPage() {
     );
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div style={{ ...pageStyle, ...containerStyle }}>
         <h2 style={headingStyle}># {channel.title || channel.name}</h2>
         <div style={flexStyle}>
@@ -261,7 +261,7 @@ export default function ChannelPage() {
                 const photo =
                   m.user?.photo ||
                   "https://ui-avatars.com/api/?background=random&name=" +
-                  m.user?.username;
+                    m.user?.username;
 
                 return (
                   <div key={m._id} style={messageStyle}>
@@ -384,10 +384,10 @@ export default function ChannelPage() {
           {/* SIDEBAR */}
           <div style={sidebarStyle}>
             <div style={sidebarCardStyle}>
-              <h4 style={{ margin: "0 0 12px 0", color: palette.accent }}>About</h4>
-              <p style={{ color: palette.textLight }}>
-                {channel.description}
-              </p>
+              <h4 style={{ margin: "0 0 12px 0", color: palette.accent }}>
+                About
+              </h4>
+              <p style={{ color: palette.textLight }}>{channel.description}</p>
               <p>
                 <b>Members:</b> {channel.members?.length}
               </p>

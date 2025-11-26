@@ -69,7 +69,7 @@ export default function EventCreate() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div style={pageWrapper}>
         <div style={card}>
           <h2 style={formTitle}>Create New Event</h2>

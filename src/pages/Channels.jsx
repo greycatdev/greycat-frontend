@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 // --- START: Helper for responsive styles based on screen size (simulated media query) ---
 const getResponsiveStyles = () => {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 600;
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 600;
 
   return {
     // For the main wrapper
@@ -26,10 +26,10 @@ const getResponsiveStyles = () => {
       marginTop: 12,
     },
     // For the individual input fields within the group
-    groupInput: { 
-        flex: 1, 
-        minWidth: isMobile ? "auto" : 0 // Allows inputs to properly stack
-    }
+    groupInput: {
+      flex: 1,
+      minWidth: isMobile ? "auto" : 0, // Allows inputs to properly stack
+    },
   };
 };
 
@@ -38,7 +38,7 @@ function useResponsiveStyles() {
 
   useEffect(() => {
     // Only run this hook logic client-side
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     const handleResize = () => setStyles(getResponsiveStyles());
     window.addEventListener("resize", handleResize);
@@ -55,7 +55,7 @@ export default function Channels() {
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const navigate = useNavigate();
-  
+
   const styles = useResponsiveStyles(); // Use responsive styles hook
 
   const loadChannels = () => {
@@ -92,7 +92,7 @@ export default function Channels() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div style={styles.mainContainer}>
         {/* PAGE TITLE */}
         <h1
@@ -105,7 +105,7 @@ export default function Channels() {
         >
           Channels
         </h1>
-        
+
         {/* --- CREATE CHANNEL --- */}
         <div
           style={{

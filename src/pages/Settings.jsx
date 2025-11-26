@@ -186,11 +186,10 @@ export default function Settings() {
     );
   };
 
-  if (loading)
-    return <DashboardLayout>Loading settings...</DashboardLayout>;
+  if (loading) return <DashboardLayout>Loading settings...</DashboardLayout>;
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       {/* everything from here down stays EXACTLY AS YOU WROTE IT */}
       {/* I did NOT touch a single style, layout, or design line */}
       {/* ——— YOUR ORIGINAL UI CODE BELOW ——— */}
@@ -200,8 +199,7 @@ export default function Settings() {
           maxWidth: 960,
           margin: "0 auto",
           padding: "24px 24px 40px",
-          fontFamily:
-            "Poppins, system-ui, -apple-system, BlinkMacSystemFont",
+          fontFamily: "Poppins, system-ui, -apple-system, BlinkMacSystemFont",
           color: "#c9d1d9",
         }}
       >
@@ -366,8 +364,8 @@ export default function Settings() {
               lineHeight: 1.5,
             }}
           >
-            Deleting your account is permanent. All posts, projects
-            and data will be erased. This action cannot be undone.
+            Deleting your account is permanent. All posts, projects and data
+            will be erased. This action cannot be undone.
           </p>
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -494,12 +492,8 @@ function SaveButton({ onClick, text }) {
         fontWeight: 500,
         transition: "background-color 0.2s",
       }}
-      onMouseOver={(e) =>
-        (e.currentTarget.style.backgroundColor = "#2ea043")
-      }
-      onMouseOut={(e) =>
-        (e.currentTarget.style.backgroundColor = "#238636")
-      }
+      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#2ea043")}
+      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#238636")}
     >
       {text}
     </button>
@@ -522,12 +516,8 @@ function DangerButton({ onClick, text }) {
         fontWeight: 600,
         transition: "background-color 0.2s",
       }}
-      onMouseOver={(e) =>
-        (e.currentTarget.style.backgroundColor = "#f85149")
-      }
-      onMouseOut={(e) =>
-        (e.currentTarget.style.backgroundColor = "#da3633")
-      }
+      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#f85149")}
+      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#da3633")}
     >
       {text}
     </button>
@@ -563,13 +553,9 @@ function Modal({ modalContent, hideModal }) {
           color: "#c9d1d9",
         }}
       >
-        <p style={{ marginBottom: 20, fontSize: 16 }}>
-          {modalContent.message}
-        </p>
+        <p style={{ marginBottom: 20, fontSize: 16 }}>{modalContent.message}</p>
 
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
-        >
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
           {modalContent.isConfirm && (
             <button
               onClick={hideModal}
@@ -598,9 +584,7 @@ function Modal({ modalContent, hideModal }) {
             style={{
               padding: "8px 14px",
               borderRadius: 6,
-              background: modalContent.isConfirm
-                ? "#da3633"
-                : "#238636",
+              background: modalContent.isConfirm ? "#da3633" : "#238636",
               border: modalContent.isConfirm
                 ? "1px solid #f85149"
                 : "1px solid #2ea043",

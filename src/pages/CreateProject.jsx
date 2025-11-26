@@ -50,7 +50,7 @@ export default function CreateProject() {
   };
 
   return (
-    <DashboardLayout>
+    <DashboardLayout requireAuth={true}>
       <div
         style={{
           maxWidth: 600,

@@ -3,14 +3,10 @@ import { useEffect, useState, useRef } from "react";
 import { API } from "../api";
 import { Link, useNavigate } from "react-router-dom";
 
-export default function DashboardLayout({ children }) {
+export default function DashboardLayout({ children, requireAuth = false }) {
   const navigate = useNavigate();
-
-  /* ---------------- CACHE AUTH FIX ---------------- */
-  const cachedUser = JSON.parse(sessionStorage.getItem("gc_user"));
-
-  const [user, setUser] = useState(cachedUser || null);
-  const [authLoading, setAuthLoading] = useState(!cachedUser);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(requireAuth); // only show loading when auth is required
 
   // MOBILE SIDEBAR STATE
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -24,7 +20,9 @@ export default function DashboardLayout({ children }) {
 
   /* ---------------- SEARCH LOGIC ---------------- */
   const runSearch = (value) => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
     if (!value.trim()) {
       setVisible(false);
@@ -45,12 +43,13 @@ export default function DashboardLayout({ children }) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setVisible(false);
       }
-
-      if (isSidebarOpen && e.target.classList.contains("gc-sidebar-backdrop")) {
+      const isClickOnBackdrop = e.target.classList.contains(
+        "gc-sidebar-backdrop"
+      );
+      if (isSidebarOpen && isClickOnBackdrop) {
         setIsSidebarOpen(false);
       }
     };
-
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [isSidebarOpen]);
@@ -67,13 +66,8 @@ export default function DashboardLayout({ children }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* ---------------- LOAD AUTH USER (ONLY IF NOT CACHED) ---------------- */
+  /* ---------------- LOAD AUTH USER (SAFE) ---------------- */
   useEffect(() => {
-    if (cachedUser) {
-      setAuthLoading(false);
-      return;
-    }
-
     let mounted = true;
 
     async function check() {
@@ -83,12 +77,12 @@ export default function DashboardLayout({ children }) {
 
         if (res.data.authenticated) {
           setUser(res.data.user);
-          sessionStorage.setItem("gc_user", JSON.stringify(res.data.user));
         } else {
-          navigate("/login");
+          // If auth is required, redirect to login; otherwise keep rendering (user stays null)
+          if (requireAuth) navigate("/login");
         }
       } catch (err) {
-        navigate("/login");
+        if (requireAuth) navigate("/login");
       } finally {
         if (mounted) setAuthLoading(false);
       }
@@ -98,8 +92,7 @@ export default function DashboardLayout({ children }) {
     return () => (mounted = false);
   }, []);
 
-  /* ------------ AUTH UI ----------- */
-  if (authLoading) {
+  if (authLoading && requireAuth) {
     return (
       <div
         style={{
@@ -115,7 +108,7 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  if (!user)
+  if (!user && requireAuth)
     return (
       <div
         style={{
@@ -130,7 +123,6 @@ export default function DashboardLayout({ children }) {
       </div>
     );
 
-  /* ---------------- PAGE LAYOUT ---------------- */
   return (
     <>
       {isSidebarOpen && (
@@ -216,22 +208,31 @@ export default function DashboardLayout({ children }) {
           <SidebarItem to="/" label="Home" icon="home.svg" />
           <SidebarItem to="/explore" label="Explore" icon="explore.svg" />
           <SidebarItem to="/events" label="Events" icon="calendar.svg" />
-          <SidebarItem to={`/${user.username}`} label="Profile" icon="user.svg" />
+          <SidebarItem
+            to={user ? `/${user.username}` : "/login"}
+            label="Profile"
+            icon="user.svg"
+          />
           <SidebarItem to="/projects" label="Projects" icon="folder.svg" />
-          <SidebarItem to="/import/github" label="Import GitHub" icon="github.svg" />
+          <SidebarItem
+            to="/import/github"
+            label="Import GitHub"
+            icon="github.svg"
+          />
           <SidebarItem to="/channels" label="Channels" icon="folder.svg" />
           <SidebarItem to="/create-post" label="Create Post" icon="plus.svg" />
-          <SidebarItem to="/create-project" label="Add Project" icon="plus.svg" />
+          <SidebarItem
+            to="/create-project"
+            label="Add Project"
+            icon="plus.svg"
+          />
           <SidebarItem to="/settings" label="Settings" icon="settings.svg" />
 
           <div style={{ flexGrow: 1 }} />
 
           {/* Logout */}
           <button
-            onClick={() => {
-              sessionStorage.removeItem("gc_user");
-              window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`;
-            }}
+            onClick={() => handleLogout()}
             style={{
               width: "100%",
               padding: "8px 10px",
@@ -264,13 +265,20 @@ export default function DashboardLayout({ children }) {
 
           {/* TOPBAR */}
           <div className="gc-topbar">
-            <div className="gc-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <div
+              className="gc-mobile-toggle"
+              onClick={() => setIsSidebarOpen(true)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="currentColor"
+              >
                 <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
               </svg>
             </div>
 
-            {/* SEARCH */}
             <div
               style={{ position: "relative", flex: 1, margin: "0 10px" }}
               ref={searchRef}
@@ -384,19 +392,34 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* USER AVATAR */}
-            <img
-              src={user.photo}
-              onClick={() => navigate(`/${user.username}`)}
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: "50%",
-                cursor: "pointer",
-                border: "1px solid #30363d",
-                objectFit: "cover",
-              }}
-            />
+            {user ? (
+              <img
+                src={user.photo}
+                onClick={() => navigate(`/${user.username}`)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  cursor: "pointer",
+                  border: "1px solid #30363d",
+                  objectFit: "cover",
+                }}
+              />
+            ) : (
+              <button
+                onClick={() => navigate("/login")}
+                style={{
+                  background: "transparent",
+                  border: "1px solid #30363d",
+                  color: "#c9d1d9",
+                  padding: "6px 8px",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                }}
+              >
+                Login
+              </button>
+            )}
           </div>
 
           <main className="gc-main-content">{children}</main>
@@ -421,8 +444,12 @@ function SidebarItem({ to, icon, label }) {
         marginBottom: 2,
         textDecoration: "none",
       }}
-      onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#161b22";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+      }} // ⭐ FIXED THIS
     >
       <img
         src={`/icons/${icon}`}
@@ -449,7 +476,7 @@ function SearchItem({ children, onClick }) {
         color: "#c9d1d9",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "#21262d")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")} // ⭐ FIXED THIS
     >
       {children}
     </div>
