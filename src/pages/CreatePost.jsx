@@ -30,7 +30,7 @@ export default function CreatePost() {
   };
 
   return (
-    <DashboardLayout requireAuth={true}>
+    <DashboardLayout>
       <div
         style={{
           maxWidth: 520,

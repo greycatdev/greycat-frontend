@@ -34,7 +34,7 @@ export default function EventCreate() {
 
     let bannerUrl = null;
 
-    // If user didn’t upload → generate random banner
+    // If user didn't upload → generate random banner
     if (!bannerFile) {
       bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
         Date.now() + "-" + Math.random()
@@ -44,7 +44,7 @@ export default function EventCreate() {
     // If user uploaded → upload to server
     if (bannerFile) {
       const formData = new FormData();
-      formData.append("banner", bannerFile); // must match backend field name
+      formData.append("banner", bannerFile);
 
       const uploadRes = await API.post("/upload/banner", formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -62,14 +62,14 @@ export default function EventCreate() {
       date,
       location,
       type,
-      bannerImage: bannerUrl, // must match DB schema
+      bannerImage: bannerUrl,
     });
 
     if (res.data.success) navigate(`/event/${res.data.event._id}`);
   };
 
   return (
-    <DashboardLayout requireAuth={true}>
+    <DashboardLayout>
       <div style={pageWrapper}>
         <div style={card}>
           <h2 style={formTitle}>Create New Event</h2>

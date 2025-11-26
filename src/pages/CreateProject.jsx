@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,6 @@ import { useNavigate } from "react-router-dom";
 export default function CreateProject() {
   const navigate = useNavigate();
 
-  const [user, setUser] = useState(null);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [tech, setTech] = useState("");
@@ -14,12 +13,6 @@ export default function CreateProject() {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState("");
   const [uploading, setUploading] = useState(false);
-
-  useEffect(() => {
-    API.get("/auth/user").then((res) => {
-      if (res.data.authenticated) setUser(res.data.user);
-    });
-  }, []);
 
   const submit = async () => {
     if (!title.trim()) return alert("Title is required");
@@ -37,20 +30,19 @@ export default function CreateProject() {
     fd.append("image", image);
 
     const res = await API.post("/project/create", fd, {
-      headers: { "Content-Type": "multipart/form-data" },
+      headers: { "Content-Type": "multipart/form-data" }
     });
 
     setUploading(false);
 
     if (res.data.success) {
       alert("Project added!");
-      if (user) navigate(`/${user.username}`);
-      else window.location.href = "/";
+      navigate(`/${res.data.project.user.username}`);
     }
   };
 
   return (
-    <DashboardLayout requireAuth={true}>
+    <DashboardLayout>
       <div
         style={{
           maxWidth: 600,
@@ -161,9 +153,10 @@ export default function CreateProject() {
             fontSize: 16,
             borderRadius: 6,
             fontWeight: 500,
-            cursor: "pointer",
+            cursor: uploading ? "not-allowed" : "pointer",
             transition: "0.2s",
             marginTop: 8,
+            opacity: uploading ? 0.6 : 1,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.background = "#2ea043")}
           onMouseLeave={(e) => (e.currentTarget.style.background = "#238636")}
@@ -175,7 +168,7 @@ export default function CreateProject() {
   );
 }
 
-/* ──────────── INPUT STYLES (GITHUB LIKE) ──────────── */
+/* ──────────── INPUT STYLES ──────────── */
 
 const labelStyle = {
   marginBottom: 6,
