@@ -18,48 +18,36 @@ export default function EditProfile() {
   const [photoPreview, setPhotoPreview] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 768
-  );
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  /* ---------- Responsive listener ---------- */
+  /* ---------- RESPONSIVE LISTENER ---------- */
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
     const r = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", r);
     return () => window.removeEventListener("resize", r);
   }, []);
 
-  /* ---------- Load user ---------- */
+  /* ---------------- LOAD USER ---------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (!res.data.authenticated) return navigate("/login");
 
       const u = res.data.user;
       setUser(u);
-
       setPhotoPreview(u.photo || "");
       setBio(u.bio || "");
       setSkills((u.skills || []).join(", "));
-      setSocial({
-        github: u.social?.github || "",
-        linkedin: u.social?.linkedin || "",
-        instagram: u.social?.instagram || "",
-        website: u.social?.website || "",
-      });
+      setSocial(u.social || {});
     });
   }, []);
 
-  /* ---------- Save changes ---------- */
+  /* ---------------- SAVE ---------------- */
   const saveChanges = async () => {
-    const payload = {
+    const res = await API.put("/user/update", {
       bio,
       skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
       social,
-    };
-
-    const res = await API.put("/user/update", payload);
+    });
 
     if (res.data.success) {
       alert("Profile updated!");
@@ -67,7 +55,7 @@ export default function EditProfile() {
     }
   };
 
-  /* ---------- Upload photo ---------- */
+  /* ---------------- PHOTO UPLOAD ---------------- */
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -91,19 +79,7 @@ export default function EditProfile() {
   };
 
   if (!user)
-    return (
-      <div
-        style={{
-          padding: 40,
-          color: "#c9d1d9",
-          fontFamily: "Poppins",
-          background: "#0d1117",
-          minHeight: "100vh",
-        }}
-      >
-        Loading…
-      </div>
-    );
+    return <div style={{ color: "white", padding: 40 }}>Loading…</div>;
 
   return (
     <div
@@ -119,7 +95,14 @@ export default function EditProfile() {
         fontFamily: "Poppins",
       }}
     >
-      <div style={{ width: "100%", maxWidth: 650, padding: "0 16px" }}>
+      {/* CENTERED CONTAINER */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 650,
+          padding: "0 16px",
+        }}
+      >
         <h2 style={{ fontSize: 26, marginBottom: 30 }}>Edit Profile</h2>
 
         {/* ---------- PROFILE PICTURE ---------- */}
@@ -169,44 +152,74 @@ export default function EditProfile() {
         </div>
 
         {/* ---------- BIO ---------- */}
-        <EditableField
-          label="Bio"
-          value={bio}
-          onChange={setBio}
-          multiline
-        />
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>Bio</label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            style={{
+              ...input,
+              height: 110,
+              resize: "vertical",
+            }}
+          />
+        </div>
 
         {/* ---------- SKILLS ---------- */}
-        <EditableField
-          label="Skills (comma separated)"
-          value={skills}
-          onChange={setSkills}
-        />
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>Skills (comma separated)</label>
+          <input
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
+            style={input}
+          />
+        </div>
 
         {/* ---------- SOCIAL LINKS ---------- */}
-        <EditableField
-          label="GitHub"
-          value={social.github}
-          onChange={(v) => setSocial({ ...social, github: v })}
-        />
-        <EditableField
-          label="LinkedIn"
-          value={social.linkedin}
-          onChange={(v) => setSocial({ ...social, linkedin: v })}
-        />
-        <EditableField
-          label="Instagram"
-          value={social.instagram}
-          onChange={(v) => setSocial({ ...social, instagram: v })}
-        />
-        <EditableField
-          label="Website"
-          value={social.website}
-          onChange={(v) => setSocial({ ...social, website: v })}
-        />
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>GitHub</label>
+          <input
+            value={social.github}
+            onChange={(e) => setSocial({ ...social, github: e.target.value })}
+            style={input}
+          />
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>LinkedIn</label>
+          <input
+            value={social.linkedin}
+            onChange={(e) => setSocial({ ...social, linkedin: e.target.value })}
+            style={input}
+          />
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>Instagram</label>
+          <input
+            value={social.instagram}
+            onChange={(e) => setSocial({ ...social, instagram: e.target.value })}
+            style={input}
+          />
+        </div>
+
+        <div style={{ marginBottom: 22 }}>
+          <label style={label}>Website</label>
+          <input
+            value={social.website}
+            onChange={(e) => setSocial({ ...social, website: e.target.value })}
+            style={input}
+          />
+        </div>
 
         {/* SAVE BUTTON */}
-        <button style={saveBtn} onClick={saveChanges}>
+        <button
+          onClick={saveChanges}
+          style={{
+            ...saveBtn,
+            width: isMobile ? "100%" : "100%",
+          }}
+        >
           Save Changes
         </button>
       </div>
@@ -214,36 +227,9 @@ export default function EditProfile() {
   );
 }
 
-/* ---------------- COMPONENT ---------------- */
+/* ---------- STYLES ---------- */
 
-function EditableField({ label, value, onChange, multiline }) {
-  return (
-    <div style={{ marginBottom: 22 }}>
-      <label style={labelStyle}>{label}</label>
-      {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={{
-            ...inputStyle,
-            height: 110,
-            resize: "vertical",
-          }}
-        />
-      ) : (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          style={inputStyle}
-        />
-      )}
-    </div>
-  );
-}
-
-/* ---------------- STYLES ---------------- */
-
-const inputStyle = {
+const input = {
   width: "100%",
   padding: "12px 14px",
   background: "#0d1117",
@@ -254,7 +240,7 @@ const inputStyle = {
   outline: "none",
 };
 
-const labelStyle = {
+const label = {
   fontSize: 14,
   color: "#8b949e",
   marginBottom: 6,
@@ -264,12 +250,11 @@ const labelStyle = {
 const saveBtn = {
   marginTop: 30,
   padding: "12px",
+  fontSize: 16,
   background: "#238636",
   border: "1px solid #2ea043",
-  borderRadius: 6,
-  fontSize: 16,
-  fontWeight: 600,
   color: "white",
+  borderRadius: 6,
   cursor: "pointer",
-  width: "100%",
+  fontWeight: 600,
 };
