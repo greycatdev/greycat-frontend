@@ -16,8 +16,6 @@ export default function EventCreate() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
-  const [loading, setLoading] = useState(false);
-
   /* ---------------- HANDLE FILE UPLOAD ---------------- */
   const handleBannerChange = (e) => {
     const file = e.target.files[0];
@@ -29,56 +27,45 @@ export default function EventCreate() {
 
   /* ---------------- SUBMIT EVENT ---------------- */
   const submit = async () => {
-    if (!title.trim() || !description.trim() || !date.trim() || !location.trim()) {
-      alert("Please fill all fields.");
+    if (!title || !description || !date || !location) {
+      alert("Please fill all fields!");
       return;
     }
 
-    setLoading(true);
-
     let bannerUrl = null;
 
-    // Generate banner if user didn't upload
+    // If user didn't upload → generate random banner
     if (!bannerFile) {
-      bannerUrl = `https://source.unsplash.com/random/1200x400?event,tech,hack,cyber&sig=${
-        Date.now()
+      bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
+        Date.now() + "-" + Math.random()
       }`;
     }
 
-    // Upload banner to server
+    // If user uploaded → upload to server
     if (bannerFile) {
       const formData = new FormData();
       formData.append("banner", bannerFile);
 
-      try {
-        const upload = await API.post("/upload/banner", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+      const uploadRes = await API.post("/upload/banner", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-        if (upload.data.success) bannerUrl = upload.data.url;
-      } catch {
-        alert("Banner upload failed.");
-        setLoading(false);
-        return;
+      if (uploadRes.data.success) {
+        bannerUrl = uploadRes.data.url;
       }
     }
 
-    try {
-      const res = await API.post("/event/create", {
-        title,
-        description,
-        date,
-        location,
-        type,
-        bannerImage: bannerUrl,
-      });
+    // CREATE EVENT
+    const res = await API.post("/event/create", {
+      title,
+      description,
+      date,
+      location,
+      type,
+      bannerImage: bannerUrl,
+    });
 
-      if (res.data.success) navigate(`/event/${res.data.event._id}`);
-    } catch {
-      alert("Event creation failed.");
-    }
-
-    setLoading(false);
+    if (res.data.success) navigate(`/event/${res.data.event._id}`);
   };
 
   return (
@@ -87,9 +74,9 @@ export default function EventCreate() {
         <div style={card}>
           <h2 style={formTitle}>Create New Event</h2>
 
-          {/* BANNER SECTION */}
+          {/* BANNER INPUT */}
           <div style={{ marginBottom: 32 }}>
-            <label style={label}>Event Banner</label>
+            <label style={labelStyle}>Event Banner</label>
 
             <div style={bannerBox}>
               <img
@@ -97,7 +84,7 @@ export default function EventCreate() {
                   bannerPreview ||
                   "https://via.placeholder.com/1200x400/0d1117/ffffff?text=Event+Banner"
                 }
-                alt="Event Banner"
+                alt="Event banner"
                 style={bannerImage}
               />
 
@@ -106,20 +93,20 @@ export default function EventCreate() {
                 <input
                   type="file"
                   accept="image/*"
-                  style={{ display: "none" }}
                   onChange={handleBannerChange}
+                  style={{ display: "none" }}
                 />
               </label>
             </div>
 
-            <p style={note}>Recommended size: 1200 × 400px</p>
+            <p style={note}>Recommended size: 1200 × 400</p>
           </div>
 
           {/* FORM */}
           <div style={formGrid}>
             <InputField
               label="Event Title"
-              placeholder="Hackathon, Meetup..."
+              placeholder="Hackathon, Meetup, Workshop..."
               value={title}
               setValue={setTitle}
             />
@@ -146,7 +133,7 @@ export default function EventCreate() {
             />
 
             <div>
-              <label style={label}>Event Type</label>
+              <label style={labelStyle}>Event Type</label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
@@ -157,21 +144,12 @@ export default function EventCreate() {
               </select>
             </div>
 
-            <button
-              onClick={submit}
-              disabled={loading}
-              style={{
-                ...submitBtn,
-                opacity: loading ? 0.7 : 1,
-                cursor: loading ? "not-allowed" : "pointer",
-              }}
-            >
-              {loading ? "Creating…" : "Create Event"}
+            <button onClick={submit} style={submitBtn}>
+              Create Event
             </button>
           </div>
         </div>
 
-        {/* STYLE FIXES */}
         <style>{`
           input:focus, textarea:focus, select:focus {
             border-color: #58a6ff !important;
@@ -188,12 +166,12 @@ export default function EventCreate() {
   );
 }
 
-/* ---------------- COMPONENTS ---------------- */
+/* ---------------- INPUT COMPONENTS ---------------- */
 
 function InputField({ label, value, setValue, placeholder, type = "text" }) {
   return (
     <div>
-      <label style={label}>{label}</label>
+      <label style={labelStyle}>{label}</label>
       <input
         type={type}
         placeholder={placeholder}
@@ -208,10 +186,10 @@ function InputField({ label, value, setValue, placeholder, type = "text" }) {
 function TextAreaField({ label, value, setValue, placeholder }) {
   return (
     <div>
-      <label style={label}>{label}</label>
+      <label style={labelStyle}>{label}</label>
       <textarea
-        value={value}
         placeholder={placeholder}
+        value={value}
         onChange={(e) => setValue(e.target.value)}
         style={{ ...input, height: 140, resize: "none" }}
       />
@@ -234,8 +212,8 @@ const card = {
   border: "1px solid #30363d",
   borderRadius: 12,
   padding: "40px 38px",
-  color: "#c9d1d9",
   boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+  color: "#c9d1d9",
   fontFamily: "Poppins",
 };
 
@@ -253,7 +231,7 @@ const formGrid = {
   gap: 28,
 };
 
-const label = {
+const labelStyle = {
   fontSize: 14,
   color: "#8b949e",
   marginBottom: 6,
@@ -267,8 +245,9 @@ const input = {
   color: "#c9d1d9",
   borderRadius: 8,
   fontSize: 15,
-  outline: "none",
   fontFamily: "Poppins",
+  outline: "none",
+  transition: "0.25s",
 };
 
 const submitBtn = {
@@ -278,18 +257,20 @@ const submitBtn = {
   color: "#fff",
   borderRadius: 8,
   fontSize: 17,
-  fontWeight: 600,
+  cursor: "pointer",
   transition: "0.25s",
+  fontWeight: 600,
 };
 
 const bannerBox = {
   width: "100%",
   height: 200,
   borderRadius: 10,
-  border: "1px solid #30363d",
   overflow: "hidden",
-  position: "relative",
+  border: "1px solid #30363d",
   background: "#161b22",
+  marginTop: 10,
+  position: "relative",
 };
 
 const bannerImage = {
