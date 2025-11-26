@@ -11,12 +11,11 @@ export default function ChannelPage() {
   const [text, setText] = useState("");
   const bottomRef = useRef();
 
-  const [socketConnected, setSocketConnected] = useState(false);
   const [isMember, setIsMember] = useState(false);
   const [me, setMe] = useState(null);
   const socketRef = useRef(null);
 
-  // Responsive state
+  // Responsive
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 800);
@@ -24,7 +23,7 @@ export default function ChannelPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch current user
+  // Fetch user
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (res.data.authenticated) setMe(res.data.user);
@@ -35,9 +34,10 @@ export default function ChannelPage() {
   const loadChannel = () => {
     API.get(`/channel/${id}`).then((res) => {
       if (res.data.success) {
-        setChannel(res.data.channel);
+        const ch = res.data.channel;
+        setChannel(ch);
         if (me) {
-          const joined = res.data.channel.members.some((m) => m._id === me._id);
+          const joined = ch.members.some((m) => m._id === me._id);
           setIsMember(joined);
         }
       }
@@ -59,26 +59,35 @@ export default function ChannelPage() {
     loadMessages();
   }, [id, me]);
 
-  // Socket.io
+  // SOCKET.io
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000", { withCredentials: true });
+    socketRef.current = io("http://localhost:5000", {
+      withCredentials: true,
+    });
 
-    socketRef.current.on("connect", () => setSocketConnected(true));
     socketRef.current.emit("joinRoom", id);
 
+    // RECEIVE NEW MESSAGE
     socketRef.current.on("new_message", (msg) => {
       if (msg.channel === id || msg.channel?._id === id) {
-        setMessages((prev) => [...prev, msg]);
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === msg._id)) return prev;
+          return [...prev, msg];
+        });
         scrollToBottom();
       }
     });
 
+    // DELETE MESSAGE
     socketRef.current.on("message_deleted", ({ msgId }) => {
       setMessages((prev) => prev.filter((m) => m._id !== msgId));
     });
 
+    // UPDATE REACTIONS
     socketRef.current.on("reaction_updated", (msg) => {
-      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
+      setMessages((prev) =>
+        prev.map((m) => (m._id === msg._id ? msg : m))
+      );
     });
 
     return () => {
@@ -87,25 +96,36 @@ export default function ChannelPage() {
     };
   }, [id]);
 
+  // SCROLL
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
-  // Message Actions
+  // SEND MESSAGE (FIXED)
   const sendMessage = async () => {
     if (!text.trim()) return;
+
     const res = await API.post(`/channel/${id}/message`, { text });
-    if (res.data.success) setText("");
+
+    if (res.data.success) {
+      // Show message instantly
+      setMessages((prev) => [...prev, res.data.message]);
+      setText("");
+      scrollToBottom();
+    }
   };
 
+  // DELETE MESSAGE
   const deleteMessage = async (msgId) => {
     if (!window.confirm("Delete message?")) return;
     await API.delete(`/channel/message/${msgId}`);
   };
 
+  // REACT
   const react = async (msgId, emoji) => {
     await API.post(`/channel/message/${msgId}/react`, { emoji });
   };
 
+  // JOIN CHANNEL
   const joinChannel = async () => {
     await API.post(`/channel/${id}/join`);
     loadChannel();
@@ -116,7 +136,7 @@ export default function ChannelPage() {
     loadChannel();
   };
 
-  // ================== DARK THEME ======================
+  // THEME
   const palette = {
     bgMain: "#0d0f12",
     bgCard: "#000000dd",
@@ -128,50 +148,40 @@ export default function ChannelPage() {
     danger: "#ef4444",
   };
 
-  const pageStyle = {
-    background: palette.bgMain,
-    minHeight: "100vh",
-    paddingTop: 20,
-    paddingBottom: 30,
-    color: palette.textMain,
-  };
-
-  const containerStyle = {
-    maxWidth: 1000,
-    margin: "0 auto",
-    padding: isMobile ? "0 10px" : "0 20px",
-  };
-
-  const chatBoxStyle = {
-    flex: 1,
-    border: `1px solid ${palette.border}`,
-    padding: 12,
-    borderRadius: 10,
-    minHeight: 460,
-    display: "flex",
-    flexDirection: "column",
-    background: palette.bgCard,
-    backdropFilter: "blur(4px)",
-  };
-
-  const sidebarStyle = {
-    width: isMobile ? "100%" : 260,
-    marginTop: isMobile ? 20 : 0,
-    position: isMobile ? "static" : "sticky",
-    top: 90,
-  };
-
   if (!channel)
     return (
       <DashboardLayout>
-        <div style={pageStyle}>Loading channel...</div>
+        <div
+          style={{
+            background: palette.bgMain,
+            height: "100vh",
+            padding: 30,
+            color: palette.textMain,
+          }}
+        >
+          Loading channel...
+        </div>
       </DashboardLayout>
     );
 
   return (
     <DashboardLayout requireAuth={true}>
-      <div style={pageStyle}>
-        <div style={containerStyle}>
+      <div
+        style={{
+          background: palette.bgMain,
+          minHeight: "100vh",
+          paddingTop: 20,
+          paddingBottom: 40,
+          color: palette.textMain,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1000,
+            margin: "0 auto",
+            padding: isMobile ? "0 10px" : "0 20px",
+          }}
+        >
           <h2
             style={{
               fontSize: isMobile ? "1.6em" : "2em",
@@ -190,9 +200,27 @@ export default function ChannelPage() {
               gap: 20,
             }}
           >
-            {/* ================= CHAT BOX =================== */}
-            <div style={chatBoxStyle}>
-              <div style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
+            {/* CHAT AREA */}
+            <div
+              style={{
+                flex: 1,
+                border: `1px solid ${palette.border}`,
+                padding: 12,
+                borderRadius: 10,
+                minHeight: 460,
+                background: palette.bgCard,
+                backdropFilter: "blur(4px)",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: "auto",
+                  paddingRight: 6,
+                }}
+              >
                 {messages.map((m) => {
                   const avatar =
                     m.user?.photo ||
@@ -220,6 +248,7 @@ export default function ChannelPage() {
                             objectFit: "cover",
                             border: `2px solid ${palette.accent}`,
                           }}
+                          alt="avatar"
                         />
 
                         <div style={{ flex: 1 }}>
@@ -227,7 +256,6 @@ export default function ChannelPage() {
                             style={{
                               display: "flex",
                               justifyContent: "space-between",
-                              marginBottom: 4,
                             }}
                           >
                             <div>
@@ -244,34 +272,44 @@ export default function ChannelPage() {
                               </small>
                             </div>
 
-                            {me &&
-                              (m.user?._id === me._id ||
-                                channel.moderators.includes(me._id)) && (
-                                <button
-                                  onClick={() => deleteMessage(m._id)}
-                                  style={{
-                                    background: "transparent",
-                                    border: "none",
-                                    color: palette.danger,
-                                    fontWeight: 700,
-                                    cursor: "pointer",
-                                  }}
-                                >
-                                  Delete
-                                </button>
-                              )}
+                            {(me?._id === m.user?._id ||
+                              channel.moderators.includes(me?._id)) && (
+                              <button
+                                onClick={() => deleteMessage(m._id)}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: palette.danger,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
 
-                          <div style={{ color: palette.textMain }}>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              color: palette.textMain,
+                            }}
+                          >
                             {m.text}
                           </div>
 
-                          {/* Reactions */}
-                          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                          {/* reactions */}
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                            }}
+                          >
                             {["👍", "❤️", "🔥", "😮"].map((emoji) => {
                               const count =
                                 m.reactions?.filter((r) => r.emoji === emoji)
                                   .length || 0;
+
                               return (
                                 <button
                                   key={emoji}
@@ -321,6 +359,7 @@ export default function ChannelPage() {
                       borderRadius: 8,
                       background: palette.accent,
                       color: "#fff",
+                      fontWeight: 600,
                       border: "none",
                     }}
                   >
@@ -346,8 +385,14 @@ export default function ChannelPage() {
               )}
             </div>
 
-            {/* ================= SIDEBAR =================== */}
-            <div style={sidebarStyle}>
+            {/* SIDEBAR */}
+            <div
+              style={{
+                width: isMobile ? "100%" : 260,
+                position: isMobile ? "static" : "sticky",
+                top: 90,
+              }}
+            >
               <div
                 style={{
                   background: palette.bgCard,
@@ -356,12 +401,19 @@ export default function ChannelPage() {
                   border: `1px solid ${palette.border}`,
                 }}
               >
-                <h4 style={{ margin: "0 0 10px 0", color: palette.accent }}>
+                <h4
+                  style={{
+                    margin: "0 0 12px 0",
+                    color: palette.accent,
+                  }}
+                >
                   About
                 </h4>
+
                 <p style={{ color: palette.textLight }}>
                   {channel.description}
                 </p>
+
                 <p>
                   <b>Members:</b> {channel.members?.length}
                 </p>

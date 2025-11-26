@@ -70,16 +70,27 @@ export default function Channels() {
     loadChannels();
   }, []);
 
+  /* ---------- CLEAN SANITIZATION (Allow spaces) ---------- */
+  const cleanChannelName = (raw) => {
+    return raw
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-") // space → dash
+      .replace(/[^a-z0-9-_]/g, ""); // remove invalid characters
+  };
+
   /* ---------- CREATE CHANNEL ---------- */
   const createChannel = async () => {
     if (!name.trim()) return alert("Channel name is required");
 
-    if (!/^[a-zA-Z0-9-_]+$/.test(name.trim()))
-      return alert("Channel name can only contain letters, numbers, - and _");
+    const sanitizedName = cleanChannelName(name);
+
+    if (!sanitizedName)
+      return alert("Channel name must contain letters or numbers");
 
     const res = await API.post("/channel/create", {
-      name,
-      title,
+      name: sanitizedName,
+      title: title.trim() || sanitizedName,
       description: desc,
     });
 
@@ -121,7 +132,7 @@ export default function Channels() {
           style={{
             marginBottom: 20,
             fontSize: 28,
-            fontWeight: 600,
+            fontWeight: 700,
             color: "#c9d1d9",
           }}
         >
@@ -151,14 +162,14 @@ export default function Channels() {
 
           <div style={styles.inputGroup}>
             <input
-              placeholder="channel-name (no spaces)"
+              placeholder="Channel name (spaces allowed)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={{ ...inputStyle, ...styles.groupInput }}
             />
 
             <input
-              placeholder="Title (optional)"
+              placeholder="Channel Title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               style={{ ...inputStyle, ...styles.groupInput }}
@@ -181,6 +192,16 @@ export default function Channels() {
           <button onClick={createChannel} style={createBtn}>
             Create Channel
           </button>
+
+          {/* PREVIEW SANITIZED NAME */}
+          {name.trim() !== "" && (
+            <p style={{ marginTop: 8, color: "#8b949e", fontSize: 14 }}>
+              Final channel URL name:{" "}
+              <span style={{ color: "#58a6ff" }}>
+                {cleanChannelName(name)}
+              </span>
+            </p>
+          )}
         </div>
 
         {/* ---------------- CHANNEL LIST ---------------- */}
