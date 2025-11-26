@@ -16,6 +16,8 @@ export default function EventCreate() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
+  const [loading, setLoading] = useState(false); // 🔥 loader state
+
   /* ---------------- HANDLE FILE UPLOAD ---------------- */
   const handleBannerChange = (e) => {
     const file = e.target.files[0];
@@ -32,35 +34,84 @@ export default function EventCreate() {
       return;
     }
 
-    // ALWAYS SEND FORMDATA (backend requires multipart)
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("date", date);
-    formData.append("location", location);
-    formData.append("type", type);
+    setLoading(true); // 🔥 SHOW LOADER
 
-    // if user uploaded a file → attach banner field
-    if (bannerFile) {
-      formData.append("banner", bannerFile);
-    } else {
-      // else send random banner as bannerImage (text field)
-      const randomBanner = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
+    let bannerUrl = null;
+
+    // Random banner (if no upload)
+    if (!bannerFile) {
+      bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
         Date.now() + "-" + Math.random()
       }`;
-
-      formData.append("bannerImage", randomBanner);
     }
 
-    const res = await API.post("/event/create", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    // If user uploaded → upload to backend
+    if (bannerFile) {
+      const formData = new FormData();
+      formData.append("banner", bannerFile);
 
-    if (res.data.success) navigate(`/event/${res.data.event._id}`);
+      try {
+        const uploadRes = await API.post("/upload/banner", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        if (uploadRes.data.success) bannerUrl = uploadRes.data.url;
+      } catch (err) {
+        setLoading(false);
+        alert("Banner upload failed.");
+        return;
+      }
+    }
+
+    // Create event
+    try {
+      const res = await API.post("/event/create", {
+        title,
+        description,
+        date,
+        location,
+        type,
+        bannerImage: bannerUrl,
+      });
+
+      if (res.data.success) {
+        navigate(`/event/${res.data.event._id}`);
+      }
+    } catch (err) {
+      alert("Event creation failed.");
+    }
+
+    setLoading(false);
   };
 
   return (
     <DashboardLayout>
+      {/* 🔥 FULL PAGE LOADING OVERLAY */}
+      {loading && (
+        <div style={loaderOverlay}>
+          <div style={loaderBox}>
+            <div className="spinner"></div>
+            <p style={{ marginTop: 12, fontSize: 16 }}>Creating Event…</p>
+          </div>
+
+          {/* Spinner CSS */}
+          <style>{`
+            .spinner {
+              width: 38px;
+              height: 38px;
+              border: 4px solid #ffffff30;
+              border-top-color: #fff;
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            }
+
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
+
       <div style={pageWrapper}>
         <div style={card}>
           <h2 style={formTitle}>Create New Event</h2>
@@ -135,29 +186,18 @@ export default function EventCreate() {
               </select>
             </div>
 
-            <button onClick={submit} style={submitBtn}>
-              Create Event
+            <button onClick={submit} style={submitBtn} disabled={loading}>
+              {loading ? "Creating…" : "Create Event"}
             </button>
           </div>
         </div>
-
-        <style>{`
-          input:focus, textarea:focus, select:focus {
-            border-color: #58a6ff !important;
-            box-shadow: 0 0 0 2px rgba(88,166,255,0.4);
-          }
-
-          input[type="datetime-local"]::-webkit-calendar-picker-indicator {
-            filter: invert(1);
-            cursor: pointer;
-          }
-        `}</style>
       </div>
     </DashboardLayout>
   );
 }
 
 /* ---------------- INPUT COMPONENTS ---------------- */
+
 function InputField({ label, value, setValue, placeholder, type = "text" }) {
   return (
     <div>
@@ -188,6 +228,25 @@ function TextAreaField({ label, value, setValue, placeholder }) {
 }
 
 /* ---------------- STYLES ---------------- */
+const loaderOverlay = {
+  position: "fixed",
+  top: 0,
+  left: 0,
+  width: "100vw",
+  height: "100vh",
+  background: "rgba(0,0,0,0.72)",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  zIndex: 9999,
+  color: "white",
+  fontFamily: "Poppins",
+};
+
+const loaderBox = {
+  textAlign: "center",
+};
+
 const pageWrapper = {
   width: "100%",
   paddingTop: 25,
