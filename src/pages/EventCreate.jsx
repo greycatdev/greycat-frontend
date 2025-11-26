@@ -32,37 +32,28 @@ export default function EventCreate() {
       return;
     }
 
-    let bannerUrl = null;
+    // ALWAYS SEND FORMDATA (backend requires multipart)
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("date", date);
+    formData.append("location", location);
+    formData.append("type", type);
 
-    // If user didn't upload → generate random banner
-    if (!bannerFile) {
-      bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
+    // if user uploaded a file → attach banner field
+    if (bannerFile) {
+      formData.append("banner", bannerFile);
+    } else {
+      // else send random banner as bannerImage (text field)
+      const randomBanner = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
         Date.now() + "-" + Math.random()
       }`;
+
+      formData.append("bannerImage", randomBanner);
     }
 
-    // If user uploaded → upload to server
-    if (bannerFile) {
-      const formData = new FormData();
-      formData.append("banner", bannerFile);
-
-      const uploadRes = await API.post("/upload/banner", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      if (uploadRes.data.success) {
-        bannerUrl = uploadRes.data.url;
-      }
-    }
-
-    // CREATE EVENT
-    const res = await API.post("/event/create", {
-      title,
-      description,
-      date,
-      location,
-      type,
-      bannerImage: bannerUrl,
+    const res = await API.post("/event/create", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
     });
 
     if (res.data.success) navigate(`/event/${res.data.event._id}`);
@@ -167,7 +158,6 @@ export default function EventCreate() {
 }
 
 /* ---------------- INPUT COMPONENTS ---------------- */
-
 function InputField({ label, value, setValue, placeholder, type = "text" }) {
   return (
     <div>
@@ -198,7 +188,6 @@ function TextAreaField({ label, value, setValue, placeholder }) {
 }
 
 /* ---------------- STYLES ---------------- */
-
 const pageWrapper = {
   width: "100%",
   paddingTop: 25,
