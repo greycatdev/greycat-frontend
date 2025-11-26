@@ -338,9 +338,9 @@ export default function EventPage() {
     bottom: 14,
     padding: "6px 12px",
     borderRadius: 999,
-    border: "1px solid rgba(0,0,0,0.4)", // soft black border
+    border: "2px solid rgba(0,0,0,0.4)", // soft black border
     background: countdown.isLive
-      ? "rgba(35, 134, 55, 0.15)" // subtle green tint
+      ? "rgba(0, 0, 0, 0.15)" // subtle green tint
       : "rgba(0, 0, 0, 0.25)",    // soft dark transparent
     color: countdown.isLive ? "#e6ffe9" : "#dcdcdc",
     fontSize: 13,
