@@ -18,19 +18,20 @@ export default function ChannelPage() {
 
   // Responsive state
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
-
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 800);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Fetch current user
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (res.data.authenticated) setMe(res.data.user);
     });
   }, []);
 
+  // Load channel
   const loadChannel = () => {
     API.get(`/channel/${id}`).then((res) => {
       if (res.data.success) {
@@ -58,10 +59,9 @@ export default function ChannelPage() {
     loadMessages();
   }, [id, me]);
 
+  // Socket.io
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000", {
-      withCredentials: true,
-    });
+    socketRef.current = io("http://localhost:5000", { withCredentials: true });
 
     socketRef.current.on("connect", () => setSocketConnected(true));
     socketRef.current.emit("joinRoom", id);
@@ -90,6 +90,7 @@ export default function ChannelPage() {
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
+  // Message Actions
   const sendMessage = async () => {
     if (!text.trim()) return;
     const res = await API.post(`/channel/${id}/message`, { text });
@@ -115,131 +116,49 @@ export default function ChannelPage() {
     loadChannel();
   };
 
-  // ---------- DARK THEME & RESPONSIVE STYLES ----------
+  // ================== DARK THEME ======================
   const palette = {
-    bgCard: "#000000cc",
-    accent: "#00598dff",
-    border: "#313643",
-    textMain: "#F4F6FB",
-    textLight: "#969ba1",
-    danger: "#e74c3c",
-    surface: "#181A20",
+    bgMain: "#0d0f12",
+    bgCard: "#000000dd",
+    surface: "#1a1d24",
+    border: "#2f333d",
+    textMain: "#f8f9fb",
+    textLight: "#a7abb3",
+    accent: "#0ea5e9",
+    danger: "#ef4444",
   };
 
   const pageStyle = {
     background: palette.bgMain,
     minHeight: "100vh",
+    paddingTop: 20,
+    paddingBottom: 30,
     color: palette.textMain,
-    paddingTop: 30,
-    paddingBottom: 40,
   };
 
   const containerStyle = {
-    maxWidth: 980,
+    maxWidth: 1000,
     margin: "0 auto",
-  };
-
-  const headingStyle = {
-    fontSize: "2em",
-    fontWeight: 700,
-    letterSpacing: "1px",
-    margin: isMobile ? "0 0 20px 6px" : "0 0 30px 0",
-    color: palette.accent,
-  };
-
-  const flexStyle = {
-    display: "flex",
-    gap: isMobile ? 0 : 24,
-    alignItems: isMobile ? "stretch" : "flex-start",
-    flexDirection: isMobile ? "column" : "row",
+    padding: isMobile ? "0 10px" : "0 20px",
   };
 
   const chatBoxStyle = {
     flex: 1,
     border: `1px solid ${palette.border}`,
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     minHeight: 460,
     display: "flex",
     flexDirection: "column",
     background: palette.bgCard,
-    marginBottom: isMobile ? 28 : 0,
-  };
-
-  const chatScrollStyle = {
-    overflowY: "auto",
-    flex: 1,
-    paddingRight: 6,
-  };
-
-  const messageStyle = {
-    padding: 10,
-    marginBottom: 10,
-    borderRadius: 8,
-    background: palette.surface,
-    boxShadow: "0 0 6px 0 rgba(0,0,0,0.06)",
-    color: palette.textMain,
+    backdropFilter: "blur(4px)",
   };
 
   const sidebarStyle = {
     width: isMobile ? "100%" : 260,
+    marginTop: isMobile ? 20 : 0,
     position: isMobile ? "static" : "sticky",
-    top: 80,
-    alignSelf: isMobile ? "unset" : "flex-start",
-    marginBottom: isMobile ? 6 : 0,
-  };
-
-  const sidebarCardStyle = {
-    padding: 15,
-    border: `1px solid ${palette.border}`,
-    borderRadius: 8,
-    background: palette.bgCard,
-    color: palette.textMain,
-    boxSizing: "border-box",
-  };
-
-  const leaveBtnStyle = {
-    padding: "8px 12px",
-    borderRadius: 8,
-    background: "#301c1c",
-    border: `1px solid ${palette.danger}`,
-    color: palette.danger,
-    width: "100%",
-    textAlign: "center",
-    fontWeight: 700,
-    marginTop: 12,
-    cursor: "pointer",
-  };
-
-  const joinBtnStyle = {
-    padding: "8px 12px",
-    borderRadius: 8,
-    background: palette.bgMain,
-    border: `1px solid ${palette.accent}`,
-    color: palette.textMain,
-    width: "100%",
-    textAlign: "center",
-    fontWeight: 700,
-    marginTop: 12,
-    cursor: "pointer",
-  };
-
-  const sendBtnStyle = {
-    padding: "10px 16px",
-    borderRadius: 8,
-    background: palette.accent,
-    color: "#fff",
-    border: "none",
-    fontWeight: 600,
-  };
-
-  const inputStyle = {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
-    border: `1px solid ${palette.border}`,
-    background: palette.surface,
-    color: palette.textMain,
+    top: 90,
   };
 
   if (!channel)
@@ -251,155 +170,236 @@ export default function ChannelPage() {
 
   return (
     <DashboardLayout requireAuth={true}>
-      <div style={{ ...pageStyle, ...containerStyle }}>
-        <h2 style={headingStyle}># {channel.title || channel.name}</h2>
-        <div style={flexStyle}>
-          {/* CHAT BOX */}
-          <div style={chatBoxStyle}>
-            <div style={chatScrollStyle}>
-              {messages.map((m) => {
-                const photo =
-                  m.user?.photo ||
-                  "https://ui-avatars.com/api/?background=random&name=" +
-                    m.user?.username;
+      <div style={pageStyle}>
+        <div style={containerStyle}>
+          <h2
+            style={{
+              fontSize: isMobile ? "1.6em" : "2em",
+              fontWeight: 700,
+              color: palette.accent,
+              marginBottom: 20,
+            }}
+          >
+            # {channel.title || channel.name}
+          </h2>
 
-                return (
-                  <div key={m._id} style={messageStyle}>
-                    <div style={{ display: "flex", gap: 12 }}>
-                      <img
-                        src={photo}
-                        style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          border: `2px solid ${palette.accent}`,
-                        }}
-                        alt="user avatar"
-                      />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              gap: 20,
+            }}
+          >
+            {/* ================= CHAT BOX =================== */}
+            <div style={chatBoxStyle}>
+              <div style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
+                {messages.map((m) => {
+                  const avatar =
+                    m.user?.photo ||
+                    "https://ui-avatars.com/api/?background=random&name=" +
+                      m.user?.username;
 
-                      <div style={{ flex: 1 }}>
-                        <div
+                  return (
+                    <div
+                      key={m._id}
+                      style={{
+                        marginBottom: 14,
+                        background: palette.surface,
+                        padding: 10,
+                        borderRadius: 8,
+                        border: `1px solid ${palette.border}`,
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: 12 }}>
+                        <img
+                          src={avatar}
                           style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            width: 42,
+                            height: 42,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: `2px solid ${palette.accent}`,
                           }}
-                        >
-                          <div>
-                            <b style={{ color: palette.accent }}>
-                              @{m.user?.username}
-                            </b>
-                            <small
-                              style={{
-                                marginLeft: 8,
-                                color: palette.textLight,
-                                fontSize: "0.93em",
-                              }}
-                            >
-                              {new Date(m.createdAt).toLocaleTimeString()}
-                            </small>
+                        />
+
+                        <div style={{ flex: 1 }}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              marginBottom: 4,
+                            }}
+                          >
+                            <div>
+                              <b style={{ color: palette.accent }}>
+                                @{m.user?.username}
+                              </b>
+                              <small
+                                style={{
+                                  marginLeft: 8,
+                                  color: palette.textLight,
+                                }}
+                              >
+                                {new Date(m.createdAt).toLocaleTimeString()}
+                              </small>
+                            </div>
+
+                            {me &&
+                              (m.user?._id === me._id ||
+                                channel.moderators.includes(me._id)) && (
+                                <button
+                                  onClick={() => deleteMessage(m._id)}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    color: palette.danger,
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              )}
                           </div>
-                          {me &&
-                            (m.user?._id === me._id ||
-                              channel.moderators.includes(me._id)) && (
-                              <button
-                                onClick={() => deleteMessage(m._id)}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  color: palette.danger,
-                                  cursor: "pointer",
-                                  fontWeight: 700,
-                                }}
-                              >
-                                Delete
-                              </button>
-                            )}
-                        </div>
-                        <div style={{ marginTop: 6, color: palette.textMain }}>
-                          {m.text}
-                        </div>
-                        {/* reactions */}
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: "flex",
-                            gap: 8,
-                          }}
-                        >
-                          {["👍", "❤️", "🔥", "😮"].map((emoji) => {
-                            const count =
-                              m.reactions?.filter((r) => r.emoji === emoji)
-                                .length || 0;
-                            return (
-                              <button
-                                key={emoji}
-                                onClick={() => react(m._id, emoji)}
-                                style={{
-                                  border: `1px solid ${palette.border}`,
-                                  background: palette.bgCard,
-                                  color: palette.textMain,
-                                  padding: "4px 8px",
-                                  borderRadius: 6,
-                                  fontWeight: 700,
-                                  fontSize: "1em",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                {emoji} {count > 0 && count}
-                              </button>
-                            );
-                          })}
+
+                          <div style={{ color: palette.textMain }}>
+                            {m.text}
+                          </div>
+
+                          {/* Reactions */}
+                          <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                            {["👍", "❤️", "🔥", "😮"].map((emoji) => {
+                              const count =
+                                m.reactions?.filter((r) => r.emoji === emoji)
+                                  .length || 0;
+                              return (
+                                <button
+                                  key={emoji}
+                                  onClick={() => react(m._id, emoji)}
+                                  style={{
+                                    padding: "4px 8px",
+                                    borderRadius: 6,
+                                    background: palette.bgCard,
+                                    border: `1px solid ${palette.border}`,
+                                    color: palette.textMain,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {emoji} {count > 0 && count}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={bottomRef} />
-            </div>
-            {/* MESSAGE INPUT */}
-            {isMember && (
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  placeholder={`Message #${channel.name}`}
-                  style={inputStyle}
-                />
-                <button onClick={sendMessage} style={sendBtnStyle}>
-                  Send
-                </button>
+                  );
+                })}
+                <div ref={bottomRef} />
               </div>
-            )}
-            {!isMember && (
-              <div style={{ marginTop: 10, textAlign: "center" }}>
-                <button onClick={joinChannel} style={joinBtnStyle}>
+
+              {/* INPUT */}
+              {isMember ? (
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <input
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    placeholder={`Message #${channel.name}`}
+                    style={{
+                      flex: 1,
+                      padding: 10,
+                      borderRadius: 8,
+                      border: `1px solid ${palette.border}`,
+                      background: palette.surface,
+                      color: palette.textMain,
+                    }}
+                  />
+                  <button
+                    onClick={sendMessage}
+                    style={{
+                      padding: "10px 16px",
+                      borderRadius: 8,
+                      background: palette.accent,
+                      color: "#fff",
+                      border: "none",
+                    }}
+                  >
+                    Send
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={joinChannel}
+                  style={{
+                    marginTop: 14,
+                    padding: 12,
+                    width: "100%",
+                    background: palette.accent,
+                    border: "none",
+                    borderRadius: 8,
+                    fontWeight: 700,
+                    color: "#fff",
+                  }}
+                >
                   Join Channel to Chat
                 </button>
-              </div>
-            )}
-          </div>
-          {/* SIDEBAR */}
-          <div style={sidebarStyle}>
-            <div style={sidebarCardStyle}>
-              <h4 style={{ margin: "0 0 12px 0", color: palette.accent }}>
-                About
-              </h4>
-              <p style={{ color: palette.textLight }}>{channel.description}</p>
-              <p>
-                <b>Members:</b> {channel.members?.length}
-              </p>
-              {isMember ? (
-                <button onClick={leaveChannel} style={leaveBtnStyle}>
-                  Leave Channel
-                </button>
-              ) : (
-                <button onClick={joinChannel} style={joinBtnStyle}>
-                  Join Channel
-                </button>
               )}
+            </div>
+
+            {/* ================= SIDEBAR =================== */}
+            <div style={sidebarStyle}>
+              <div
+                style={{
+                  background: palette.bgCard,
+                  padding: 16,
+                  borderRadius: 10,
+                  border: `1px solid ${palette.border}`,
+                }}
+              >
+                <h4 style={{ margin: "0 0 10px 0", color: palette.accent }}>
+                  About
+                </h4>
+                <p style={{ color: palette.textLight }}>
+                  {channel.description}
+                </p>
+                <p>
+                  <b>Members:</b> {channel.members?.length}
+                </p>
+
+                {isMember ? (
+                  <button
+                    onClick={leaveChannel}
+                    style={{
+                      padding: 10,
+                      width: "100%",
+                      borderRadius: 8,
+                      background: "#2e1a1a",
+                      border: `1px solid ${palette.danger}`,
+                      color: palette.danger,
+                      fontWeight: 700,
+                      marginTop: 10,
+                    }}
+                  >
+                    Leave Channel
+                  </button>
+                ) : (
+                  <button
+                    onClick={joinChannel}
+                    style={{
+                      padding: 10,
+                      width: "100%",
+                      borderRadius: 8,
+                      background: "transparent",
+                      border: `1px solid ${palette.accent}`,
+                      color: palette.textMain,
+                      fontWeight: 700,
+                      marginTop: 10,
+                    }}
+                  >
+                    Join Channel
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

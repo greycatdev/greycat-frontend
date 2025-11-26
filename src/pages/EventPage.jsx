@@ -331,36 +331,39 @@ export default function EventPage() {
 
             {/* BOTTOM RIGHT: COUNTDOWN (Feature B) */}
             {countdown && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 18,
-                  // Changed from top: 14 to bottom: 14
-                  bottom: 14, 
-                  padding: "6px 12px",
-                  borderRadius: 999,
-                  border: "1px solid #30363d",
-                  background: countdown.isLive ? "#238636" : "#161b22",
-                  color: countdown.isLive ? "#f0f6fc" : "#c9d1d9",
-                  fontSize: 13,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                {countdown.isLive && (
-                  <span
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      background: "#ff7b72",
-                      boxShadow: "0 0 6px #ff7b72",
-                    }}
-                  />
-                )}
-                {countdown.label}
-              </div>
+             <div
+  style={{
+    position: "absolute",
+    right: 18,
+    bottom: 14,
+    padding: "6px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(0,0,0,0.4)", // soft black border
+    background: countdown.isLive
+      ? "rgba(35, 134, 55, 0.15)" // subtle green tint
+      : "rgba(0, 0, 0, 0.25)",    // soft dark transparent
+    color: countdown.isLive ? "#e6ffe9" : "#dcdcdc",
+    fontSize: 13,
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    backdropFilter: "blur(4px)", // premium frosted effect
+  }}
+>
+  {countdown.isLive && (
+    <span
+      style={{
+        width: 8,
+        height: 8,
+        borderRadius: "50%",
+        background: "#ff4d4d",
+        boxShadow: "0 0 4px rgba(255, 77, 77, 0.7)", // softer glow
+      }}
+    />
+  )}
+  {countdown.label}
+</div>
+
             )}
           </div>
 
