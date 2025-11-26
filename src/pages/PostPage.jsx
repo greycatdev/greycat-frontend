@@ -10,12 +10,16 @@ export default function PostPage() {
   const [post, setPost] = useState(null);
   const [user, setUser] = useState(null);
   const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  /* ---------------- LOAD POST ---------------- */
   const loadPost = () =>
     API.get(`/post/${id}`).then((res) => {
       if (res.data.success) setPost(res.data.post);
+      setLoading(false);
     });
 
+  /* ---------------- LOAD USER ---------------- */
   const loadUser = () =>
     API.get("/auth/user").then((res) => {
       if (res.data.authenticated) setUser(res.data.user);
@@ -26,25 +30,46 @@ export default function PostPage() {
     loadUser();
   }, [id]);
 
-  if (!post) return <DashboardLayout>Loading...</DashboardLayout>;
+  /* ---------------- LOADING SCREEN ---------------- */
+  if (loading || !post) {
+    return (
+      <DashboardLayout>
+        <div
+          style={{
+            padding: 40,
+            fontSize: 18,
+            color: "#c9d1d9",
+            fontFamily: "Poppins",
+          }}
+        >
+          Loading post…
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   const isOwner = user && post?.user && user._id === post.user._id;
 
+  /* ---------------- DELETE POST ---------------- */
   const deletePost = () => {
     if (!window.confirm("Delete this post?")) return;
+
     API.delete(`/post/${id}`).then((res) => {
       if (res.data.success) navigate("/");
     });
   };
 
+  /* ---------------- LIKE ---------------- */
   const toggleLike = () => {
     API.post(`/post/${id}/like`).then((res) => {
       if (res.data.success) loadPost();
     });
   };
 
+  /* ---------------- COMMENT ---------------- */
   const submitComment = () => {
     if (!commentText.trim()) return;
+
     API.post(`/post/${id}/comment`, { text: commentText }).then((res) => {
       if (res.data.success) {
         setCommentText("");
@@ -53,14 +78,17 @@ export default function PostPage() {
     });
   };
 
+  /* ---------------- TIME ---------------- */
   const formatTime = (dateString) => {
-    const diff = (new Date() - new Date(dateString)) / 1000;
+    const diff = (Date.now() - new Date(dateString)) / 1000;
+
     if (diff < 60) return "Just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-    return `${Math.floor(diff / 86400)}d ago`;
+    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+    return Math.floor(diff / 86400) + "d ago";
   };
 
+  /* ---------------- HEART ICON ---------------- */
   const HeartIcon = ({ filled }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -78,6 +106,10 @@ export default function PostPage() {
     </svg>
   );
 
+  const userPhoto =
+    post?.user?.photo || "https://ui-avatars.com/api/?name=" + post?.user?.username;
+
+  /* ---------------- UI ---------------- */
   return (
     <DashboardLayout>
       <div
@@ -90,9 +122,10 @@ export default function PostPage() {
           color: "#c9d1d9",
           overflow: "hidden",
           fontFamily: "Poppins",
+          marginBottom: 40,
         }}
       >
-        {/* ---------- HEADER ---------- */}
+        {/* ---------- USER HEADER ---------- */}
         <div
           style={{
             display: "flex",
@@ -105,10 +138,14 @@ export default function PostPage() {
             onClick={() =>
               post?.user?.username && navigate(`/${post.user.username}`)
             }
-            style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              cursor: "pointer",
+            }}
           >
             <img
-              src={post?.user?.photo}
+              src={userPhoto}
               style={{
                 width: 48,
                 height: 48,
@@ -130,7 +167,7 @@ export default function PostPage() {
                 marginLeft: "auto",
                 padding: "6px 14px",
                 borderRadius: 6,
-                background: "#15171aff",
+                background: "#15171a",
                 border: "1px solid #f85149",
                 color: "#f85149",
                 fontSize: 14,
@@ -145,7 +182,11 @@ export default function PostPage() {
         {/* ---------- IMAGE ---------- */}
         <img
           src={post.image}
-          style={{ width: "100%", objectFit: "cover", maxHeight: 600 }}
+          style={{
+            width: "100%",
+            objectFit: "cover",
+            maxHeight: 600,
+          }}
         />
 
         {/* ---------- LIKE + CAPTION ---------- */}
@@ -235,39 +276,41 @@ export default function PostPage() {
             ) : null
           )}
 
-          {/* ---------- COMMENT INPUT ---------- */}
-          <div style={{ marginTop: 12 }}>
-            <input
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Add a comment…"
-              style={{
-                width: "100%",
-                padding: "12px",
-                borderRadius: 6,
-                background: "#0d1117",
-                border: "1px solid #30363d",
-                color: "#c9d1d9",
-                outline: "none",
-                marginBottom: 10,
-              }}
-            />
+          {/* COMMENT INPUT */}
+          {user && (
+            <div style={{ marginTop: 12 }}>
+              <input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment…"
+                style={{
+                  width: "100%",
+                  padding: "12px",
+                  borderRadius: 6,
+                  background: "#0d1117",
+                  border: "1px solid #30363d",
+                  color: "#c9d1d9",
+                  outline: "none",
+                  marginBottom: 10,
+                }}
+              />
 
-            <button
-              onClick={submitComment}
-              style={{
-                padding: "10px 18px",
-                borderRadius: 6,
-                background: "#238636",
-                border: "1px solid #2ea043",
-                color: "white",
-                fontWeight: 500,
-                cursor: "pointer",
-              }}
-            >
-              Post
-            </button>
-          </div>
+              <button
+                onClick={submitComment}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 6,
+                  background: "#238636",
+                  border: "1px solid #2ea043",
+                  color: "white",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                }}
+              >
+                Post
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

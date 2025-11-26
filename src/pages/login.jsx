@@ -10,7 +10,9 @@ export default function Login() {
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  // Clear stale query params
+  /* -----------------------------------------
+     CLEAR STALE QUERY PARAMS
+  ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
 
@@ -19,9 +21,11 @@ export default function Login() {
     }
   }, [location.search]);
 
-  // Check login status (fixed)
+  /* -----------------------------------------
+     VERIFY IF USER IS ALREADY LOGGED IN
+  ----------------------------------------- */
   useEffect(() => {
-    async function verifyLogin() {
+    async function checkAuth() {
       try {
         const res = await fetch(`${BACKEND_URL}/auth/user`, {
           credentials: "include",
@@ -29,20 +33,24 @@ export default function Login() {
 
         const data = await res.json();
 
-        // ONLY redirect if user is definitely logged in
-        if (data.authenticated === true) {
+        // Valid logged-in state
+        if (data?.authenticated) {
           navigate("/");
+          return;
         }
       } catch (err) {
-        console.log("Auth check failed");
-      } finally {
-        setCheckingAuth(false); // allow page to render
+        console.log("Auth check failed", err);
       }
+
+      setCheckingAuth(false); // allow page to render
     }
 
-    verifyLogin();
+    checkAuth();
   }, []);
 
+  /* -----------------------------------------
+     LOADER UNTIL AUTH IS VERIFIED
+  ----------------------------------------- */
   if (checkingAuth) {
     return (
       <div
@@ -52,14 +60,19 @@ export default function Login() {
           alignItems: "center",
           justifyContent: "center",
           fontSize: "18px",
-          color: "#888",
+          color: "#8b949e",
+          background: "#0d1117",
+          fontFamily: "Poppins",
         }}
       >
-        Checking login...
+        Checking login…
       </div>
     );
   }
 
+  /* -----------------------------------------
+     LOGIN HANDLERS
+  ----------------------------------------- */
   const handleGoogleLogin = () => {
     window.location.href = `${BACKEND_URL}/auth/google`;
   };
@@ -68,12 +81,11 @@ export default function Login() {
     window.location.href = `${BACKEND_URL}/auth/github`;
   };
 
-  // Detect dark mode
-  const isDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+  /* -----------------------------------------
+     THEME (DARK/LIGHT DETECTION)
+  ----------------------------------------- */
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
-  // Theme vars
   const theme = {
     bg: isDark ? "#0d1117" : "#f6f8fa",
     cardBg: isDark ? "#161b22" : "#ffffff",
@@ -82,6 +94,9 @@ export default function Login() {
     googleHover: isDark ? "#21262d" : "#f3f4f6",
   };
 
+  /* -----------------------------------------
+     UI
+  ----------------------------------------- */
   return (
     <div
       style={{
@@ -91,30 +106,25 @@ export default function Login() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif',
-        color: theme.text,
         padding: "20px",
+        fontFamily: "Poppins",
       }}
     >
       <div
         style={{
           width: "100%",
-          maxWidth: "380px",
+          maxWidth: 380,
           padding: "32px 28px",
-          borderRadius: "10px",
+          borderRadius: 10,
           background: theme.cardBg,
           border: `1px solid ${theme.border}`,
-          boxShadow: isDark
-            ? "0 0 0"
-            : "0 1px 3px rgba(0,0,0,0.06)",
           textAlign: "center",
         }}
       >
         <h1
           style={{
             fontSize: "20px",
-            marginBottom: "22px",
+            marginBottom: "24px",
             fontWeight: 600,
             color: theme.text,
           }}
@@ -122,7 +132,7 @@ export default function Login() {
           Sign in to GreyCat
         </h1>
 
-        {/* Google */}
+        {/* Google Button */}
         <button
           onClick={handleGoogleLogin}
           style={{
@@ -133,30 +143,28 @@ export default function Login() {
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            borderRadius: "6px",
+            borderRadius: 6,
             background: theme.cardBg,
             border: `1px solid ${theme.border}`,
             color: theme.text,
-            fontSize: "15px",
+            fontSize: 15,
             cursor: "pointer",
             transition: "0.15s",
           }}
-          onMouseEnter={(e) =>
-            (e.target.style.background = theme.googleHover)
-          }
-          onMouseLeave={(e) =>
-            (e.target.style.background = theme.cardBg)
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.background = theme.googleHover)}
+          onMouseLeave={(e) => (e.currentTarget.style.background = theme.cardBg)}
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
             width="20"
-            style={{ filter: isDark ? "invert(1)" : "none" }}
+            style={{
+              filter: isDark ? "invert(1)" : "none",
+            }}
           />
           Continue with Google
         </button>
 
-        {/* GitHub */}
+        {/* GitHub Button */}
         <button
           onClick={handleGithubLogin}
           style={{
@@ -166,20 +174,16 @@ export default function Login() {
             alignItems: "center",
             justifyContent: "center",
             gap: "10px",
-            borderRadius: "6px",
+            borderRadius: 6,
             background: "#24292f",
             border: "1px solid #1b1f24",
             color: "#ffffff",
-            fontSize: "15px",
+            fontSize: 15,
             cursor: "pointer",
             transition: "0.15s",
           }}
-          onMouseEnter={(e) =>
-            (e.target.style.background = "#1f2328")
-          }
-          onMouseLeave={(e) =>
-            (e.target.style.background = "#24292f")
-          }
+          onMouseEnter={(e) => (e.currentTarget.style.background = "#1f2328")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "#24292f")}
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"

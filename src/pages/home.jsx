@@ -21,16 +21,18 @@ export default function Home() {
     return posted.toLocaleDateString();
   };
 
-  // ONLY FETCH POSTS
+  /* ---------------------- FETCH POSTS ONLY ---------------------- */
   useEffect(() => {
-    API.get("/post/feed").then((res) => {
-      if (res.data.success && Array.isArray(res.data.posts)) {
-        setPosts(res.data.posts);
-      }
-      setLoading(false);
-    });
+    API.get("/post/feed")
+      .then((res) => {
+        if (res.data.success && Array.isArray(res.data.posts)) {
+          setPosts(res.data.posts);
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
+  /* ---------------------- LOADER (NO DASHBOARDLAYOUT WRAP) ---------------------- */
   if (loading) return <CarLoader />;
 
   return (
@@ -40,10 +42,24 @@ export default function Home() {
           maxWidth: 650,
           margin: "0 auto",
           paddingBottom: 40,
+          paddingTop: 10,
           fontFamily: "Poppins",
           color: "#c9d1d9",
         }}
       >
+        {posts.length === 0 && (
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: 60,
+              color: "#8b949e",
+              fontSize: 15,
+            }}
+          >
+            No posts yet. Follow users or create a post.
+          </p>
+        )}
+
         {posts.map(
           (post) =>
             post && (
@@ -55,10 +71,10 @@ export default function Home() {
                   borderRadius: 12,
                   border: "1px solid #30363d",
                   overflow: "hidden",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.25)",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
                 }}
               >
-                {/* ---- USER HEADER ---- */}
+                {/* ---------------------- USER HEADER ---------------------- */}
                 <div
                   style={{
                     display: "flex",
@@ -72,7 +88,7 @@ export default function Home() {
                   }
                 >
                   <img
-                    src={post?.user?.photo}
+                    src={post?.user?.photo || "/default-avatar.png"}
                     style={{
                       width: 44,
                       height: 44,
@@ -82,6 +98,7 @@ export default function Home() {
                       marginRight: 12,
                     }}
                   />
+
                   <div>
                     <div
                       style={{
@@ -92,6 +109,7 @@ export default function Home() {
                     >
                       @{post?.user?.username ?? "unknown"}
                     </div>
+
                     <div
                       style={{
                         fontSize: 12,
@@ -104,7 +122,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ---- IMAGE ---- */}
+                {/* ---------------------- IMAGE ---------------------- */}
                 <img
                   src={post.image}
                   alt="post"
@@ -119,7 +137,7 @@ export default function Home() {
                   onClick={() => navigate(`/post/${post._id}`)}
                 />
 
-                {/* ---- CAPTION ---- */}
+                {/* ---------------------- CAPTION ---------------------- */}
                 {post.caption && (
                   <div style={{ padding: "12px 16px 16px 16px" }}>
                     <span

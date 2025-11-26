@@ -1,6 +1,3 @@
-// FULL GITHUB DARK THEME REDESIGN — Projects.jsx
-// Clean, modern, consistent with GitHub Dark UI
-
 import { useEffect, useState } from "react";
 import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -9,43 +6,47 @@ import { useNavigate } from "react-router-dom";
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const navigate = useNavigate();
 
   /* ---------------- LOAD USER + PROJECTS ---------------- */
   useEffect(() => {
-    API.get("/auth/user").then((res) => {
-      if (res.data.authenticated) {
-        setUser(res.data.user);
-        // If user has a username, fetch by username for compatibility; otherwise, use /project/mine
-        if (res.data.user?.username) {
-          API.get(`/project/user/${res.data.user.username}`).then((r) => {
-            if (r.data.success) setProjects(r.data.projects);
-            else {
-              // fallback to /mine if username-based fetch failed
-              API.get("/project/mine").then((rm) => {
-                if (rm.data.success) setProjects(rm.data.projects);
-              });
-            }
-          });
-        } else {
-          API.get("/project/mine").then((rm) => {
-            if (rm.data.success) setProjects(rm.data.projects);
-          });
-        }
-      }
-    });
-  }, []);
+    async function load() {
+      try {
+        const res = await API.get("/auth/user");
 
-  if (!user)
-    return (
-      <DashboardLayout>
-        <p style={{ color: "#8b949e", padding: 20 }}>Loading...</p>
-      </DashboardLayout>
-    );
+        if (res.data.authenticated) {
+          setUser(res.data.user);
+
+          // Try username-based fetch first
+          if (res.data.user?.username) {
+            const r = await API.get(`/project/user/${res.data.user.username}`);
+            if (r.data.success) {
+              setProjects(r.data.projects);
+            } else {
+              const fallback = await API.get("/project/mine");
+              if (fallback.data.success) setProjects(fallback.data.projects);
+            }
+          } else {
+            const rm = await API.get("/project/mine");
+            if (rm.data.success) setProjects(rm.data.projects);
+          }
+        }
+      } catch (err) {
+        console.log("Project load failed");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
+  }, []);
 
   /* ---------------- DELETE PROJECT ---------------- */
   const deleteProject = (id) => {
     if (!window.confirm("Delete this project?")) return;
+
     API.delete(`/project/${id}`).then((res) => {
       if (res.data.success) {
         setProjects((prev) => prev.filter((p) => p._id !== id));
@@ -55,18 +56,44 @@ export default function Projects() {
 
   /* ---------------- RENDER IMAGE ---------------- */
   const renderProjectImage = (p) => {
-    if (p.image) return p.image;
-    if (p.link && p.link.includes("github.com")) {
-      try {
-        const parts = p.link.split("github.com/")[1].split("/");
-        return `https://opengraph.githubassets.com/1/${parts[0]}/${parts[1]}`;
-      } catch {
-        return "/no-image.png";
-      }
+    if (p.image) {
+      return p.image.startsWith("http")
+        ? p.image
+        : `${import.meta.env.VITE_BACKEND_URL}/${p.image}`;
     }
+
+    // GitHub open graph fallback
+    if (p.link?.includes("github.com")) {
+      try {
+        const repo = p.link.split("github.com/")[1];
+        const [owner, repoName] = repo.split("/");
+        if (owner && repoName)
+          return `https://opengraph.githubassets.com/1/${owner}/${repoName}`;
+      } catch {}
+    }
+
     return "/no-image.png";
   };
 
+  /* ---------------- LOADING UI ---------------- */
+  if (loading || !user) {
+    return (
+      <DashboardLayout>
+        <div
+          style={{
+            padding: 40,
+            color: "#8b949e",
+            fontSize: 17,
+            fontFamily: "Poppins",
+          }}
+        >
+          Loading projects…
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  /* ---------------- UI ---------------- */
   return (
     <DashboardLayout>
       <div
@@ -85,6 +112,8 @@ export default function Projects() {
             justifyContent: "space-between",
             alignItems: "center",
             marginBottom: 30,
+            flexWrap: "wrap",
+            gap: 14,
           }}
         >
           <h1
@@ -125,8 +154,8 @@ export default function Projects() {
 
         {/* EMPTY STATE */}
         {projects.length === 0 && (
-          <p style={{ color: "#8b949e", marginTop: 20 }}>
-            You haven't added any projects yet.
+          <p style={{ color: "#8b949e", marginTop: 10, paddingLeft: 2 }}>
+            You haven’t added any projects yet.
           </p>
         )}
 
@@ -149,21 +178,21 @@ export default function Projects() {
                   border: "1px solid #30363d",
                   borderRadius: 12,
                   padding: 16,
-                  boxShadow: "0 4px 20px rgba(0,0,0,0.25)",
+                  boxShadow: "0 4px 18px rgba(0,0,0,0.25)",
                   transition: "0.25s",
                   cursor: "pointer",
                   display: "flex",
                   flexDirection: "column",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.border = "1px solid #f7fff8ff";
+                  e.currentTarget.style.border = "1px solid #58a6ff";
                   e.currentTarget.style.boxShadow =
-                    "0 0 16px rgba(88,166,255,0.25)";
+                    "0 0 18px rgba(88,166,255,0.25)";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.border = "1px solid #30363d";
                   e.currentTarget.style.boxShadow =
-                    "0 4px 20px rgba(0,0,0,0.25)";
+                    "0 4px 18px rgba(0,0,0,0.25)";
                 }}
               >
                 {/* IMAGE */}
@@ -200,7 +229,7 @@ export default function Projects() {
                   {p.title}
                 </h3>
 
-                {/* TECH STACK */}
+                {/* TECH */}
                 <p
                   style={{
                     color: "#8b949e",
@@ -211,7 +240,7 @@ export default function Projects() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {p.tech?.join(", ")}
+                  {p.tech?.join(", ") || "No tech stack"}
                 </p>
 
                 {/* DELETE BUTTON */}

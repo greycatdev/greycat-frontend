@@ -4,7 +4,7 @@ import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
-// Responsive utility
+/* ---------------------- RESPONSIVE SYSTEM ---------------------- */
 const getResponsiveStyles = () => {
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 600;
 
@@ -36,37 +36,41 @@ function useResponsiveStyles() {
   const [styles, setStyles] = useState(getResponsiveStyles());
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handleResize = () => setStyles(getResponsiveStyles());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const handler = () => setStyles(getResponsiveStyles());
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
   }, []);
 
   return styles;
 }
 
+/* ---------------------- PAGE COMPONENT ---------------------- */
 export default function Channels() {
+  const navigate = useNavigate();
+  const styles = useResponsiveStyles();
+
   const [channels, setChannels] = useState([]);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate();
-  const styles = useResponsiveStyles();
-
-  const loadChannels = () => {
-    API.get("/channel").then((res) => {
+  /* ---------- LOAD CHANNELS ---------- */
+  const loadChannels = async () => {
+    try {
+      const res = await API.get("/channel");
       if (res.data.success) setChannels(res.data.channels);
-      setLoading(false);
-    });
+    } catch (err) {
+      console.error("Failed to load channels", err);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     loadChannels();
   }, []);
 
+  /* ---------- CREATE CHANNEL ---------- */
   const createChannel = async () => {
     if (!name.trim()) return alert("Channel name is required");
 
@@ -86,30 +90,33 @@ export default function Channels() {
       setDesc("");
       loadChannels();
     } else {
-      alert(res.data.message || "Create failed");
+      alert(res.data.message || "Failed to create channel");
     }
   };
 
-  // Fixed loading screen WITHOUT DashboardLayout nesting
-  if (loading)
+  /* ---------- CLEAN LOADING SCREEN ---------- */
+  if (loading) {
     return (
-      <div
-        style={{
-          padding: 40,
-          color: "#c9d1d9",
-          background: "#0d1117",
-          minHeight: "100vh",
-          fontFamily: "Poppins",
-        }}
-      >
-        Loading channels…
-      </div>
+      <DashboardLayout>
+        <div
+          style={{
+            padding: 40,
+            color: "#c9d1d9",
+            background: "#0d1117",
+            minHeight: "100vh",
+            fontFamily: "Poppins",
+          }}
+        >
+          Loading channels…
+        </div>
+      </DashboardLayout>
     );
+  }
 
+  /* ---------------------- UI ---------------------- */
   return (
     <DashboardLayout>
       <div style={styles.mainContainer}>
-        {/* PAGE TITLE */}
         <h1
           style={{
             marginBottom: 20,
@@ -121,7 +128,7 @@ export default function Channels() {
           Channels
         </h1>
 
-        {/* CREATE CHANNEL */}
+        {/* ---------------- CREATE CHANNEL ---------------- */}
         <div
           style={{
             padding: 18,
@@ -142,7 +149,6 @@ export default function Channels() {
             Create a Channel
           </h3>
 
-          {/* INPUT GROUP */}
           <div style={styles.inputGroup}>
             <input
               placeholder="channel-name (no spaces)"
@@ -177,7 +183,7 @@ export default function Channels() {
           </button>
         </div>
 
-        {/* CHANNEL LIST */}
+        {/* ---------------- CHANNEL LIST ---------------- */}
         <h3
           style={{
             marginBottom: 15,
@@ -222,7 +228,7 @@ export default function Channels() {
   );
 }
 
-/* ---------------------- GITHUB STYLE INPUTS ---------------------- */
+/* ---------------------- STYLES ---------------------- */
 
 const inputStyle = {
   padding: "10px 12px",
@@ -247,8 +253,6 @@ const createBtn = {
   fontSize: 16,
   transition: "0.2s",
 };
-
-/* ---------------------- CHANNEL CARD ---------------------- */
 
 const channelCard = {
   padding: 16,

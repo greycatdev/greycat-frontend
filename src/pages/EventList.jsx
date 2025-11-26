@@ -1,3 +1,4 @@
+// frontend/src/pages/EventList.jsx
 import { useEffect, useState } from "react";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
@@ -6,12 +7,43 @@ import DashboardLayout from "../layouts/DashboardLayout";
 export default function EventList() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
+  /* ---------------- LOAD EVENTS ---------------- */
   useEffect(() => {
-    API.get("/event").then((res) => {
-      if (res.data.success) setEvents(res.data.events);
-    });
+    async function fetchEvents() {
+      try {
+        const res = await API.get("/event");
+        if (res.data.success) {
+          setEvents(res.data.events);
+        }
+      } catch (err) {
+        console.error("Failed to load events");
+      }
+      setLoading(false);
+    }
+    fetchEvents();
   }, []);
+
+  /* ---------------- LOADING PAGE (NO LAYOUT YET!) ---------------- */
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#0d1117",
+          color: "#c9d1d9",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 20,
+          fontFamily: "Poppins",
+        }}
+      >
+        Loading events…
+      </div>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -25,8 +57,12 @@ export default function EventList() {
           </button>
         </div>
 
-        {/* GRID */}
+        {/* EVENT GRID */}
         <div style={grid}>
+          {events.length === 0 && (
+            <p style={{ color: "#8b949e", fontSize: 16 }}>No events yet…</p>
+          )}
+
           {events.map((ev) => (
             <div
               key={ev._id}
@@ -37,25 +73,23 @@ export default function EventList() {
               {/* EVENT BANNER */}
               <div style={bannerBox}>
                 <img
-                  src={ev.bannerImage}
-                  alt="event banner"
+                  src={
+                    ev.bannerImage ||
+                    "https://via.placeholder.com/800x300/0d1117/ffffff?text=Event+Banner"
+                  }
+                  alt="Event banner"
                   style={bannerImage}
                 />
               </div>
 
+              {/* CONTENT */}
               <div style={cardContent}>
-                {/* TITLE */}
                 <h3 style={eventTitle}>{ev.title}</h3>
 
-                {/* DATE */}
-                <p style={detailText}>
-                  📅 {new Date(ev.date).toLocaleString()}
-                </p>
-
-                {/* LOCATION */}
+                <p style={detailText}>📅 {new Date(ev.date).toLocaleString()}</p>
                 <p style={detailText}>📍 {ev.location}</p>
 
-                {/* TYPE CHIP */}
+                {/* TYPE LABEL */}
                 <span
                   style={{
                     ...chip,
@@ -75,8 +109,16 @@ export default function EventList() {
 
                 {/* HOST */}
                 <div style={hostRow}>
-                  <img src={ev.host.photo} alt="host" style={hostAvatar} />
-                  <span style={hostName}>@{ev.host.username}</span>
+                  <img
+                    src={
+                      ev.host?.photo ||
+                      "https://ui-avatars.com/api/?background=333&color=fff&name=" +
+                        ev.host?.username
+                    }
+                    alt="host"
+                    style={hostAvatar}
+                  />
+                  <span style={hostName}>@{ev.host?.username}</span>
                 </div>
               </div>
             </div>
@@ -84,9 +126,10 @@ export default function EventList() {
         </div>
       </div>
 
+      {/* HOVER ANIMATION */}
       <style>{`
         .event-card:hover {
-          transform: translateY(-4px);
+          transform: translateY(-6px);
           border-color: #58a6ff;
           box-shadow: 0 0 18px rgba(88,166,255,0.25);
         }

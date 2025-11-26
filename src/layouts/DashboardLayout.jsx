@@ -6,90 +6,88 @@ import { Link, useNavigate } from "react-router-dom";
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
-  // Load cached user instantly → avoids flashing loader
-  const cachedUser = JSON.parse(sessionStorage.getItem("gc_user"));
-  const [user, setUser] = useState(cachedUser);
-  const [checkingAuth, setCheckingAuth] = useState(!cachedUser);
+  /* =========================================================
+     1️⃣ AUTH STATE (CACHED + LIVE)
+  ========================================================= */
+  const cached = sessionStorage.getItem("gc_user");
+  const [user, setUser] = useState(cached ? JSON.parse(cached) : null);
+  const [authLoading, setAuthLoading] = useState(!cached);
 
-  // Sidebar state
+  /* =========================================================
+     2️⃣ MOBILE SIDEBAR
+  ========================================================= */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  // Search state
+  /* =========================================================
+     3️⃣ SEARCH SYSTEM
+  ========================================================= */
   const [search, setSearch] = useState("");
   const [results, setResults] = useState({ users: [], events: [] });
   const [visible, setVisible] = useState(false);
-  const searchRef = useRef(null);
-  const searchTimeoutRef = useRef(null);
 
-  /* ---------------- AUTH CHECK (ONE TIME, OPTIMIZED) ---------------- */
+  const searchRef = useRef(null);
+  const searchTimeout = useRef(null);
+
+  /* =========================================================
+     4️⃣ AUTH CHECK — ONLY RUNS WHEN CACHE NOT AVAILABLE
+  ========================================================= */
   useEffect(() => {
-    if (cachedUser) {
-      setCheckingAuth(false);
+    if (cached) {
+      setAuthLoading(false);
       return;
     }
 
-    async function fetchUser() {
+    let mounted = true;
+
+    async function verify() {
       try {
         const res = await API.get("/auth/user");
+
+        if (!mounted) return;
+
         if (res.data.authenticated) {
           setUser(res.data.user);
           sessionStorage.setItem("gc_user", JSON.stringify(res.data.user));
         } else {
           sessionStorage.removeItem("gc_user");
-          return navigate("/login");
+          navigate("/login");
+          return;
         }
-      } catch {
+      } catch (err) {
         sessionStorage.removeItem("gc_user");
-        return navigate("/login");
+        navigate("/login");
+        return;
       }
-      setCheckingAuth(false);
+
+      mounted && setAuthLoading(false);
     }
 
-    fetchUser();
+    verify();
+    return () => (mounted = false);
   }, []);
 
-  /* ---------------- QUICK LOADER (ONLY WHILE AUTH CHECKING) ---------------- */
-  if (checkingAuth) {
-    return (
-      <div
-        style={{
-          padding: 40,
-          background: "#0d1117",
-          color: "#c9d1d9",
-          minHeight: "100vh",
-          fontFamily: "Poppins",
-        }}
-      >
-        Checking authentication…
-      </div>
-    );
-  }
-
-  // If still no user → force login
-  if (!user) {
-    return null;
-  }
-
-  /* ---------------- SEARCH LOGIC ---------------- */
+  /* =========================================================
+     5️⃣ SEARCH SYSTEM
+  ========================================================= */
   const runSearch = (value) => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
     if (!value.trim()) {
       setVisible(false);
       return;
     }
 
-    searchTimeoutRef.current = setTimeout(() => {
+    searchTimeout.current = setTimeout(() => {
       API.get(`/search?q=${value}`).then((res) => {
         setResults(res.data);
         setVisible(true);
       });
-    }, 300);
+    }, 250);
   };
 
-  /* CLOSE SEARCH WHEN CLICK OUTSIDE */
+  /* CLICK OUTSIDE OR SIDEBAR BACKDROP */
   useEffect(() => {
-    const handleClick = (e) => {
+    const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setVisible(false);
       }
@@ -101,29 +99,59 @@ export default function DashboardLayout({ children }) {
         setIsSidebarOpen(false);
       }
     };
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [isSidebarOpen]);
 
-  /* ESC KEY CLOSE */
+  /* ESCAPE KEY */
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") {
-        setIsSidebarOpen(false);
         setVisible(false);
+        setIsSidebarOpen(false);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* ---------------- LOGOUT ---------------- */
+  /* =========================================================
+     6️⃣ FIX LOADING
+     - ONLY SHOW AUTH LOADING DURING FIRST CHECK
+     - NEVER LOOP
+  ========================================================= */
+  if (authLoading) {
+    return (
+      <div
+        style={{
+          padding: 40,
+          minHeight: "100vh",
+          background: "#0d1117",
+          color: "#c9d1d9",
+          fontFamily: "Poppins",
+        }}
+      >
+        Checking authentication…
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  /* =========================================================
+     7️⃣ LOGOUT
+  ========================================================= */
   const handleLogout = () => {
     sessionStorage.removeItem("gc_user");
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`;
   };
 
-  /* ---------------- LAYOUT UI ---------------- */
+  /* =========================================================
+     8️⃣ FULL LAYOUT UI
+  ========================================================= */
   return (
     <>
       {isSidebarOpen && (
@@ -156,6 +184,7 @@ export default function DashboardLayout({ children }) {
               className="gc-close-mobile"
               onClick={() => setIsSidebarOpen(false)}
               style={{
+                marginLeft: "auto",
                 background: "none",
                 border: "none",
                 color: "#c9d1d9",
@@ -166,26 +195,21 @@ export default function DashboardLayout({ children }) {
             </button>
           </div>
 
-          {/* BRAND LOGO */}
+          {/* DESKTOP BRAND */}
           <div
             className="gc-desktop-brand"
             style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
           >
-            <div
+            <img
+              src="/icons/greycat.jpeg"
               style={{
                 width: 26,
                 height: 26,
                 borderRadius: "50%",
-                overflow: "hidden",
                 border: "1px solid #30363d",
                 marginRight: 8,
               }}
-            >
-              <img
-                src="/icons/greycat.jpeg"
-                style={{ width: "100%", height: "100%" }}
-              />
-            </div>
+            />
             Greycat
           </div>
 
@@ -194,24 +218,27 @@ export default function DashboardLayout({ children }) {
               height: 1,
               background: "#30363d",
               border: "none",
-              margin: "8px 0 10px 0",
+              margin: "8px 0 10px",
             }}
           />
 
-          <SidebarItem to="/" icon="home.svg" label="Home" />
-          <SidebarItem to="/explore" icon="explore.svg" label="Explore" />
-          <SidebarItem to="/events" icon="calendar.svg" label="Events" />
-          <SidebarItem to={`/${user.username}`} icon="user.svg" label="Profile" />
-          <SidebarItem to="/projects" icon="folder.svg" label="Projects" />
-          <SidebarItem to="/import/github" icon="github.svg" label="Import GitHub" />
-          <SidebarItem to="/channels" icon="folder.svg" label="Channels" />
-          <SidebarItem to="/create-post" icon="plus.svg" label="Create Post" />
-          <SidebarItem to="/create-project" icon="plus.svg" label="Add Project" />
-          <SidebarItem to="/settings" icon="settings.svg" label="Settings" />
+          <SidebarItem label="Home" to="/" icon="home.svg" />
+          <SidebarItem label="Explore" to="/explore" icon="explore.svg" />
+          <SidebarItem label="Events" to="/events" icon="calendar.svg" />
+          <SidebarItem label="Profile" to={`/${user.username}`} icon="user.svg" />
+          <SidebarItem label="Projects" to="/projects" icon="folder.svg" />
+          <SidebarItem label="Import GitHub" to="/import/github" icon="github.svg" />
+          <SidebarItem label="Channels" to="/channels" icon="folder.svg" />
+          <SidebarItem label="Create Post" to="/create-post" icon="plus.svg" />
+          <SidebarItem
+            label="Add Project"
+            to="/create-project"
+            icon="plus.svg"
+          />
+          <SidebarItem label="Settings" to="/settings" icon="settings.svg" />
 
           <div style={{ flexGrow: 1 }} />
 
-          {/* LOGOUT */}
           <button
             onClick={handleLogout}
             style={{
@@ -236,7 +263,7 @@ export default function DashboardLayout({ children }) {
           </button>
         </aside>
 
-        {/* MAIN CONTENT */}
+        {/* MAIN SECTION */}
         <div className="gc-main">
           {/* MOBILE TOP BRAND */}
           <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
@@ -248,8 +275,11 @@ export default function DashboardLayout({ children }) {
 
           {/* TOPBAR */}
           <div className="gc-topbar">
-            {/* SIDEBAR TOGGLE */}
-            <div className="gc-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
+            {/* MOBILE MENU */}
+            <div
+              className="gc-mobile-toggle"
+              onClick={() => setIsSidebarOpen(true)}
+            >
               <svg width="24" height="24" fill="currentColor">
                 <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
               </svg>
@@ -266,7 +296,7 @@ export default function DashboardLayout({ children }) {
                   setSearch(e.target.value);
                   runSearch(e.target.value);
                 }}
-                placeholder="Search users, events…"
+                placeholder="Search users, events..."
                 style={{
                   width: "100%",
                   padding: "6px 10px",
@@ -288,71 +318,89 @@ export default function DashboardLayout({ children }) {
                     borderRadius: 6,
                     maxHeight: 320,
                     overflowY: "auto",
+                    zIndex: 100,
                   }}
                 >
-                  {/* USERS */}
-                  {results.users.length > 0 && (
-                    <>
-                      <p style={{ padding: "6px 10px", fontSize: 11, color: "#6e7681" }}>
-                        Users
-                      </p>
-
-                      {results.users.map((u) => (
-                        <SearchItem
-                          key={u._id}
-                          onClick={() => {
-                            navigate(`/${u.username}`);
-                            setVisible(false);
-                          }}
-                        >
-                          <img
-                            src={u.photo}
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: "50%",
-                              objectFit: "cover",
-                            }}
-                          />
-                          @{u.username}
-                        </SearchItem>
-                      ))}
-                    </>
-                  )}
-
-                  {/* EVENTS */}
-                  {results.events.length > 0 && (
-                    <>
-                      <p style={{ padding: "6px 10px", fontSize: 11, color: "#6e7681" }}>
-                        Events
-                      </p>
-
-                      {results.events.map((ev) => (
-                        <SearchItem
-                          key={ev._id}
-                          onClick={() => {
-                            navigate(`/event/${ev._id}`);
-                            setVisible(false);
-                          }}
-                        >
-                          {ev.title}
-                        </SearchItem>
-                      ))}
-                    </>
-                  )}
-
-                  {/* EMPTY */}
                   {results.users.length === 0 &&
-                    results.events.length === 0 && (
-                      <p style={{ padding: 10, color: "#8b949e", fontSize: 13 }}>
-                        No results found
-                      </p>
-                    )}
+                  results.events.length === 0 ? (
+                    <p
+                      style={{
+                        padding: 10,
+                        color: "#8b949e",
+                        fontSize: 13,
+                      }}
+                    >
+                      No results found
+                    </p>
+                  ) : (
+                    <>
+                      {/* USERS */}
+                      {results.users.length > 0 && (
+                        <>
+                          <p
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: 11,
+                              color: "#6e7681",
+                            }}
+                          >
+                            Users
+                          </p>
+                          {results.users.map((u) => (
+                            <SearchItem
+                              key={u._id}
+                              onClick={() => {
+                                navigate(`/${u.username}`);
+                                setVisible(false);
+                              }}
+                            >
+                              <img
+                                src={u.photo}
+                                style={{
+                                  width: 24,
+                                  height: 24,
+                                  borderRadius: "50%",
+                                  objectFit: "cover",
+                                }}
+                              />
+                              @{u.username}
+                            </SearchItem>
+                          ))}
+                        </>
+                      )}
+
+                      {/* EVENTS */}
+                      {results.events.length > 0 && (
+                        <>
+                          <p
+                            style={{
+                              padding: "6px 10px",
+                              fontSize: 11,
+                              color: "#6e7681",
+                            }}
+                          >
+                            Events
+                          </p>
+                          {results.events.map((ev) => (
+                            <SearchItem
+                              key={ev._id}
+                              onClick={() => {
+                                navigate(`/event/${ev._id}`);
+                                setVisible(false);
+                              }}
+                            >
+                              {ev.title}
+                            </SearchItem>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>
 
-            {/* USER AVATAR */}
+            {/* AVATAR */}
             <img
               src={user.photo}
               onClick={() => navigate(`/${user.username}`)}
@@ -367,6 +415,7 @@ export default function DashboardLayout({ children }) {
             />
           </div>
 
+          {/* PAGE CONTENT */}
           <main className="gc-main-content">{children}</main>
         </div>
       </div>
@@ -374,7 +423,9 @@ export default function DashboardLayout({ children }) {
   );
 }
 
-/* ---------------- SUB COMPONENTS ---------------- */
+/* =========================================================
+   SUB COMPONENTS
+========================================================= */
 
 function SidebarItem({ to, icon, label }) {
   return (
@@ -383,12 +434,12 @@ function SidebarItem({ to, icon, label }) {
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
         padding: "6px 8px",
+        gap: 10,
+        textDecoration: "none",
+        color: "#c9d1d9",
         borderRadius: 6,
         fontSize: 14,
-        color: "#c9d1d9",
-        textDecoration: "none",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

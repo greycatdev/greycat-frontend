@@ -10,66 +10,64 @@ export default function ChannelPage() {
   const [channel, setChannel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [me, setMe] = useState(null);
   const [isMember, setIsMember] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // ❗ me is no longer fetched again (DashboardLayout already provides it)
+  const [me, setMe] = useState(() => {
+    const user = sessionStorage.getItem("gc_user");
+    return user ? JSON.parse(user) : null;
+  });
 
   const bottomRef = useRef();
   const socketRef = useRef(null);
 
-  // ----------- RESPONSIVE ----------
+  // ---------- RESPONSIVE ----------
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" && window.innerWidth <= 800
   );
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
     const handleResize = () => setIsMobile(window.innerWidth <= 800);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ----------- FETCH ME -----------
-  useEffect(() => {
-    API.get("/auth/user").then((res) => {
-      if (res.data.authenticated) setMe(res.data.user);
-    });
-  }, []);
+  // ---------- LOAD CHANNEL ----------
+  const loadChannel = async () => {
+    const res = await API.get(`/channel/${id}`);
+    if (res.data.success) {
+      const ch = res.data.channel;
+      setChannel(ch);
 
-  // ----------- LOAD CHANNEL ----------
-  const loadChannel = () => {
-    API.get(`/channel/${id}`).then((res) => {
-      if (res.data.success) {
-        const ch = res.data.channel;
-        setChannel(ch);
-
-        if (me) {
-          const joined = ch.members.some((m) => m._id === me._id);
-          setIsMember(joined);
-        }
+      if (me) {
+        const joined = ch.members.some((m) => m._id === me._id);
+        setIsMember(joined);
       }
-    });
+    }
   };
 
-  // ----------- LOAD MESSAGES ----------
-  const loadMessages = () => {
-    API.get(`/channel/${id}/messages?page=0&limit=100`).then((res) => {
-      if (res.data.success) setMessages(res.data.messages);
+  // ---------- LOAD MESSAGES ----------
+  const loadMessages = async () => {
+    const res = await API.get(`/channel/${id}/messages?page=0&limit=200`);
+    if (res.data.success) {
+      setMessages(res.data.messages);
       scrollToBottom();
-    });
+    }
   };
 
-  // ----------- INITIAL LOAD ----------
+  // ---------- INITIAL LOAD ----------
   useEffect(() => {
-    if (!id) return;
-    if (!me) return; // wait for "me"
+    if (!id || !me) return;
 
-    loadChannel();
-    loadMessages();
-    setLoading(false);
+    (async () => {
+      await loadChannel();
+      await loadMessages();
+      setLoading(false);
+    })();
   }, [id, me]);
 
-  // ----------- SOCKET ----------
+  // ---------- SOCKET ----------
   useEffect(() => {
     if (!id) return;
 
@@ -91,7 +89,9 @@ export default function ChannelPage() {
     });
 
     socketRef.current.on("reaction_updated", (msg) => {
-      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
+      setMessages((prev) =>
+        prev.map((m) => (m._id === msg._id ? msg : m))
+      );
     });
 
     return () => {
@@ -100,7 +100,7 @@ export default function ChannelPage() {
     };
   }, [id]);
 
-  // ----------- HELPERS ----------
+  // ---------- HELPERS ----------
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
@@ -141,24 +141,26 @@ export default function ChannelPage() {
     bgMain: "#0d1117",
   };
 
-  // ----------- LOADING SCREEN (NO LAYOUT YET!) -----------
-  if (loading || !channel) {
+  // ----------- CLEAN LOADING SCREEN -----------
+  if (loading) {
     return (
-      <div
-        style={{
-          background: palette.bgMain,
-          minHeight: "100vh",
-          padding: 40,
-          fontFamily: "Poppins",
-          color: palette.textMain,
-        }}
-      >
-        Loading channel…
-      </div>
+      <DashboardLayout>
+        <div
+          style={{
+            background: palette.bgMain,
+            minHeight: "100vh",
+            padding: 40,
+            fontFamily: "Poppins",
+            color: palette.textMain,
+          }}
+        >
+          Loading channel…
+        </div>
+      </DashboardLayout>
     );
   }
 
-  // ----------- PAGE UI ----------
+  // ----------- PAGE UI -----------
   return (
     <DashboardLayout>
       <div
@@ -190,7 +192,7 @@ export default function ChannelPage() {
             gap: isMobile ? 0 : 24,
           }}
         >
-          {/* ------------- CHAT BOX ------------- */}
+          {/* ---------- CHAT BOX ---------- */}
           <div
             style={{
               flex: 1,
@@ -254,22 +256,21 @@ export default function ChannelPage() {
                             </small>
                           </div>
 
-                          {me &&
-                            (m.user?._id === me._id ||
-                              channel.moderators?.includes(me._id)) && (
-                              <button
-                                onClick={() => deleteMessage(m._id)}
-                                style={{
-                                  background: "transparent",
-                                  border: "none",
-                                  color: palette.danger,
-                                  cursor: "pointer",
-                                  fontWeight: 700,
-                                }}
-                              >
-                                Delete
-                              </button>
-                            )}
+                          {(m.user?._id === me._id ||
+                            channel.moderators?.includes(me._id)) && (
+                            <button
+                              onClick={() => deleteMessage(m._id)}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: palette.danger,
+                                cursor: "pointer",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Delete
+                            </button>
+                          )}
                         </div>
 
                         <div style={{ marginTop: 6 }}>{m.text}</div>
@@ -311,7 +312,7 @@ export default function ChannelPage() {
               <div ref={bottomRef} />
             </div>
 
-            {/* INPUT */}
+            {/* MESSAGE INPUT */}
             {isMember ? (
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <input
@@ -327,7 +328,6 @@ export default function ChannelPage() {
                     color: palette.textMain,
                   }}
                 />
-
                 <button
                   onClick={sendMessage}
                   style={{
@@ -361,7 +361,7 @@ export default function ChannelPage() {
             )}
           </div>
 
-          {/* ------------- SIDEBAR ------------- */}
+          {/* ---------- SIDEBAR ---------- */}
           <div
             style={{
               width: isMobile ? "100%" : 260,

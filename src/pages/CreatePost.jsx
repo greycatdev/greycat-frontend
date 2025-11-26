@@ -9,24 +9,32 @@ export default function CreatePost() {
   const [uploading, setUploading] = useState(false);
 
   const uploadPost = async () => {
+    if (uploading) return; // prevents double-click
     if (!imageFile) return alert("Please select an image.");
 
     setUploading(true);
 
-    const formData = new FormData();
-    formData.append("image", imageFile);
-    formData.append("caption", caption);
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+      formData.append("caption", caption);
 
-    const res = await API.post("/post/create", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-      withCredentials: true,
-    });
+      const res = await API.post("/post/create", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true,
+      });
+
+      if (res.data.success) {
+        window.location.href = "/";
+      } else {
+        alert(res.data.message || "Something went wrong.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed. Try again.");
+    }
 
     setUploading(false);
-
-    if (res.data.success) {
-      window.location.href = "/";
-    }
   };
 
   return (
@@ -94,8 +102,10 @@ export default function CreatePost() {
           type="file"
           accept="image/*"
           onChange={(e) => {
-            setImageFile(e.target.files[0]);
-            setImagePreview(URL.createObjectURL(e.target.files[0]));
+            const file = e.target.files[0];
+            if (!file) return;
+            setImageFile(file);
+            setImagePreview(URL.createObjectURL(file));
           }}
           style={fileInputStyle}
         />
@@ -112,7 +122,7 @@ export default function CreatePost() {
             height: 85,
             resize: "none",
           }}
-        ></textarea>
+        />
 
         {/* SUBMIT BUTTON */}
         <button
@@ -121,7 +131,7 @@ export default function CreatePost() {
           style={{
             width: "100%",
             padding: "12px",
-            background: "#238636",
+            background: uploading ? "#1f6f2c" : "#238636",
             border: "1px solid #2ea043",
             color: "white",
             borderRadius: 6,
@@ -145,7 +155,7 @@ export default function CreatePost() {
   );
 }
 
-/* ──────────── GitHub-Style Input/Label Styles ──────────── */
+/* ---------------- STYLES ---------------- */
 
 const labelStyle = {
   marginBottom: 6,

@@ -15,6 +15,7 @@ export default function CreateProject() {
   const [uploading, setUploading] = useState(false);
 
   const submit = async () => {
+    if (uploading) return;
     if (!title.trim()) return alert("Title is required");
     if (!desc.trim()) return alert("Description is required");
     if (!tech.trim()) return alert("Tech stack is required");
@@ -22,23 +23,30 @@ export default function CreateProject() {
 
     setUploading(true);
 
-    const fd = new FormData();
-    fd.append("title", title);
-    fd.append("description", desc);
-    fd.append("tech", tech);
-    fd.append("link", link);
-    fd.append("image", image);
+    try {
+      const fd = new FormData();
+      fd.append("title", title);
+      fd.append("description", desc);
+      fd.append("tech", tech);
+      fd.append("link", link);
+      fd.append("image", image);
 
-    const res = await API.post("/project/create", fd, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+      const res = await API.post("/project/create", fd, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      if (res.data.success) {
+        alert("Project added!");
+        navigate(`/${res.data.project.user.username}`);
+      } else {
+        alert(res.data.message || "Failed to add project");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Try again.");
+    }
 
     setUploading(false);
-
-    if (res.data.success) {
-      alert("Project added!");
-      navigate(`/${res.data.project.user.username}`);
-    }
   };
 
   return (
@@ -90,8 +98,10 @@ export default function CreateProject() {
           type="file"
           accept="image/*"
           onChange={(e) => {
-            setImage(e.target.files[0]);
-            setPreview(URL.createObjectURL(e.target.files[0]));
+            const file = e.target.files[0];
+            if (!file) return;
+            setImage(file);
+            setPreview(URL.createObjectURL(file));
           }}
           style={fileInputStyle}
         />
@@ -120,7 +130,7 @@ export default function CreateProject() {
           }}
         />
 
-        {/* TECH */}
+        {/* TECH STACK */}
         <label style={labelStyle}>Tech Stack</label>
         <input
           type="text"
@@ -147,7 +157,7 @@ export default function CreateProject() {
           style={{
             width: "100%",
             padding: "12px",
-            background: "#238636",
+            background: uploading ? "#1f6f2c" : "#238636",
             border: "1px solid #2ea043",
             color: "white",
             fontSize: 16,
@@ -156,10 +166,14 @@ export default function CreateProject() {
             cursor: uploading ? "not-allowed" : "pointer",
             transition: "0.2s",
             marginTop: 8,
-            opacity: uploading ? 0.6 : 1,
+            opacity: uploading ? 0.7 : 1,
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#2ea043")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#238636")}
+          onMouseEnter={(e) => {
+            if (!uploading) e.currentTarget.style.background = "#2ea043";
+          }}
+          onMouseLeave={(e) => {
+            if (!uploading) e.currentTarget.style.background = "#238636";
+          }}
         >
           {uploading ? "Saving..." : "Save Project"}
         </button>
@@ -168,7 +182,7 @@ export default function CreateProject() {
   );
 }
 
-/* ──────────── INPUT STYLES ──────────── */
+/* ---------------- INPUT STYLES ---------------- */
 
 const labelStyle = {
   marginBottom: 6,

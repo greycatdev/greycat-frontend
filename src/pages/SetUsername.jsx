@@ -13,7 +13,9 @@ export default function SetUsername() {
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  /* CLEAR ?logout or ?error */
+  /* ---------------------------
+      CLEAR QUERY PARAMETERS
+  ---------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get("logout") || params.get("error")) {
@@ -21,28 +23,42 @@ export default function SetUsername() {
     }
   }, [location.search]);
 
-  /* LOAD USER STATUS */
+  /* ---------------------------
+      AUTH CHECK + FETCH USER
+  ---------------------------- */
   useEffect(() => {
-    fetch(`${BACKEND_URL}/auth/user`, { credentials: "include" })
+    fetch(`${BACKEND_URL}/auth/user`, {
+      credentials: "include",
+    })
       .then((res) => res.json())
       .then((data) => {
         if (!data.authenticated) return navigate("/login");
+
         setUserId(data.user._id);
-        if (data.user.username) return navigate("/");
+
+        if (data.user.username) {
+          navigate("/");
+        }
       })
       .catch(() => navigate("/login"));
   }, []);
 
-  /* VALIDATION */
+  /* ---------------------------
+      VALIDATION RULE
+  ---------------------------- */
   const validateFormat = (name) => /^[a-zA-Z0-9._]+$/.test(name);
 
-  /* CHECK USERNAME */
+  /* ---------------------------
+      CHECK USERNAME AVAILABILITY
+  ---------------------------- */
   const checkUsername = async () => {
     const trimmed = username.trim().toLowerCase();
+
     if (!trimmed) return alert("Username cannot be empty.");
+
     if (!validateFormat(trimmed)) {
       alert(
-        "Username can contain letters, numbers, dot (.) and underscore (_) only."
+        "Usernames can contain letters, numbers, dot (.) and underscore (_) only."
       );
       return;
     }
@@ -50,7 +66,9 @@ export default function SetUsername() {
     setChecking(true);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/user/check-username/${trimmed}`);
+      const res = await fetch(
+        `${BACKEND_URL}/user/check-username/${trimmed}`
+      );
       const data = await res.json();
       setAvailable(!data.exists);
     } catch {
@@ -60,11 +78,14 @@ export default function SetUsername() {
     setChecking(false);
   };
 
-  /* SAVE */
+  /* ---------------------------
+      SAVE USERNAME
+  ---------------------------- */
   const saveUsername = async () => {
     if (!available || !userId) return;
 
     const trimmed = username.trim().toLowerCase();
+
     const res = await fetch(`${BACKEND_URL}/user/set-username`, {
       method: "POST",
       credentials: "include",
@@ -73,11 +94,14 @@ export default function SetUsername() {
     });
 
     const data = await res.json();
+
     if (data.success) navigate("/");
     else alert(data.message || "Error saving username");
   };
 
-  /* UI */
+  /* ---------------------------
+      UI
+  ---------------------------- */
   return (
     <div
       style={{
@@ -87,7 +111,7 @@ export default function SetUsername() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px", // ⭐ LEFT & RIGHT spacing for mobile
+        padding: "20px",
         boxSizing: "border-box",
         fontFamily: "Poppins, sans-serif",
         color: "#c9d1d9",
@@ -96,12 +120,12 @@ export default function SetUsername() {
       <div
         style={{
           width: "100%",
-          maxWidth: 420, // ⭐ perfect for laptop & shrinks on mobile
+          maxWidth: 420,
           background: "#161b22",
           padding: "32px",
           borderRadius: 12,
           border: "1px solid #30363d",
-          boxShadow: "0 0 8px rgba(0,0,0,0.4)",
+          boxShadow: "0 0 12px rgba(0,0,0,0.35)",
         }}
       >
         <h1
@@ -128,6 +152,7 @@ export default function SetUsername() {
           This will be your unique identity on GreyCat.
         </p>
 
+        {/* LABEL */}
         <label
           style={{
             fontSize: 14,
@@ -139,11 +164,15 @@ export default function SetUsername() {
           Username
         </label>
 
+        {/* INPUT */}
         <input
           value={username}
           onChange={(e) => {
             setUsername(e.target.value.toLowerCase());
             setAvailable(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") checkUsername();
           }}
           placeholder="your_username"
           style={{
@@ -165,22 +194,44 @@ export default function SetUsername() {
           }}
         />
 
+        {/* CHECKING INDICATOR */}
         {checking && (
           <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>
         )}
 
+        {/* SUCCESS */}
         {available === true && (
-          <p style={{ color: "#2ea043", marginTop: 8, fontSize: 14 }}>
+          <p
+            style={{
+              color: "#2ea043",
+              marginTop: 8,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
             ✔ Username is available
           </p>
         )}
 
+        {/* ERROR */}
         {available === false && (
-          <p style={{ color: "#f85149", marginTop: 8, fontSize: 14 }}>
+          <p
+            style={{
+              color: "#f85149",
+              marginTop: 8,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
             ✖ Username is taken
           </p>
         )}
 
+        {/* CHECK BUTTON */}
         <button
           onClick={checkUsername}
           style={{
@@ -199,6 +250,7 @@ export default function SetUsername() {
           Check availability
         </button>
 
+        {/* SAVE BUTTON */}
         <button
           disabled={!available}
           onClick={saveUsername}
@@ -207,7 +259,7 @@ export default function SetUsername() {
             height: 44,
             marginTop: 14,
             borderRadius: 6,
-            background: available ? "#238636" : "#1f6a31",
+            background: available ? "#238636" : "#1b4426",
             opacity: available ? 1 : 0.5,
             border: "1px solid #2ea043",
             color: "white",
