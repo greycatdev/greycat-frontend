@@ -6,21 +6,32 @@ import { Link, useNavigate } from "react-router-dom";
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
-  /* =========================================================
-     1️⃣ AUTH STATE (CACHED + LIVE)
-  ========================================================= */
-  const cached = sessionStorage.getItem("gc_user");
-  const [user, setUser] = useState(cached ? JSON.parse(cached) : null);
-  const [authLoading, setAuthLoading] = useState(!cached);
+  /* ============================================
+     1️⃣ USER STATE + SESSION CACHE
+  ============================================ */
+  const cachedUser = sessionStorage.getItem("gc_user");
+  const [user, setUser] = useState(cachedUser ? JSON.parse(cachedUser) : null);
+  const [authLoading, setAuthLoading] = useState(!cachedUser);
 
-  /* =========================================================
-     2️⃣ MOBILE SIDEBAR
-  ========================================================= */
+  /* ============================================
+     2️⃣ LISTEN FOR PROFILE CHANGE FROM SETTINGS
+     (name, username, photo instantly update)
+  ============================================ */
+  useEffect(() => {
+    const sync = () => {
+      const updated = sessionStorage.getItem("gc_user");
+      if (updated) setUser(JSON.parse(updated));
+    };
+
+    window.addEventListener("gc_user_updated", sync);
+    return () => window.removeEventListener("gc_user_updated", sync);
+  }, []);
+
+  /* ============================================
+     3️⃣ SIDEBAR & SEARCH STATES
+  ============================================ */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  /* =========================================================
-     3️⃣ SEARCH SYSTEM
-  ========================================================= */
   const [search, setSearch] = useState("");
   const [results, setResults] = useState({ users: [], events: [] });
   const [visible, setVisible] = useState(false);
@@ -28,18 +39,18 @@ export default function DashboardLayout({ children }) {
   const searchRef = useRef(null);
   const searchTimeout = useRef(null);
 
-  /* =========================================================
-     4️⃣ AUTH CHECK — ONLY RUNS WHEN CACHE NOT AVAILABLE
-  ========================================================= */
+  /* ============================================
+     4️⃣ VERIFY AUTH ONLY IF NOT CACHED
+  ============================================ */
   useEffect(() => {
-    if (cached) {
+    if (cachedUser) {
       setAuthLoading(false);
       return;
     }
 
     let mounted = true;
 
-    async function verify() {
+    async function checkAuth() {
       try {
         const res = await API.get("/auth/user");
 
@@ -62,13 +73,13 @@ export default function DashboardLayout({ children }) {
       mounted && setAuthLoading(false);
     }
 
-    verify();
+    checkAuth();
     return () => (mounted = false);
   }, []);
 
-  /* =========================================================
-     5️⃣ SEARCH SYSTEM
-  ========================================================= */
+  /* ============================================
+     5️⃣ SEARCH ENGINE
+  ============================================ */
   const runSearch = (value) => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
 
@@ -85,7 +96,9 @@ export default function DashboardLayout({ children }) {
     }, 250);
   };
 
-  /* CLICK OUTSIDE OR SIDEBAR BACKDROP */
+  /* ============================================
+     6️⃣ CLOSE SEARCH + SIDEBAR WHEN CLICK OUTSIDE
+  ============================================ */
   useEffect(() => {
     const handler = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -104,32 +117,33 @@ export default function DashboardLayout({ children }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [isSidebarOpen]);
 
-  /* ESCAPE KEY */
+  /* ============================================
+     7️⃣ ESCAPE KEY CLOSE
+  ============================================ */
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") {
-        setVisible(false);
         setIsSidebarOpen(false);
+        setVisible(false);
       }
     };
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* =========================================================
-     6️⃣ FIX LOADING
-     - ONLY SHOW AUTH LOADING DURING FIRST CHECK
-     - NEVER LOOP
-  ========================================================= */
+  /* ============================================
+     8️⃣ AUTH LOADER
+  ============================================ */
   if (authLoading) {
     return (
       <div
         style={{
           padding: 40,
-          minHeight: "100vh",
           background: "#0d1117",
           color: "#c9d1d9",
           fontFamily: "Poppins",
+          minHeight: "100vh",
         }}
       >
         Checking authentication…
@@ -137,21 +151,19 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
-  /* =========================================================
-     7️⃣ LOGOUT
-  ========================================================= */
+  /* ============================================
+     9️⃣ LOGOUT
+  ============================================ */
   const handleLogout = () => {
     sessionStorage.removeItem("gc_user");
     window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`;
   };
 
-  /* =========================================================
-     8️⃣ FULL LAYOUT UI
-  ========================================================= */
+  /* ============================================
+     🔟 FULL UI LAYOUT
+  ============================================ */
   return (
     <>
       {isSidebarOpen && (
@@ -230,11 +242,7 @@ export default function DashboardLayout({ children }) {
           <SidebarItem label="Import GitHub" to="/import/github" icon="github.svg" />
           <SidebarItem label="Channels" to="/channels" icon="folder.svg" />
           <SidebarItem label="Create Post" to="/create-post" icon="plus.svg" />
-          <SidebarItem
-            label="Add Project"
-            to="/create-project"
-            icon="plus.svg"
-          />
+          <SidebarItem label="Add Project" to="/create-project" icon="plus.svg" />
           <SidebarItem label="Settings" to="/settings" icon="settings.svg" />
 
           <div style={{ flexGrow: 1 }} />
@@ -263,9 +271,9 @@ export default function DashboardLayout({ children }) {
           </button>
         </aside>
 
-        {/* MAIN SECTION */}
+        {/* MAIN AREA */}
         <div className="gc-main">
-          {/* MOBILE TOP BRAND */}
+          {/* MOBILE BRAND */}
           <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -275,7 +283,7 @@ export default function DashboardLayout({ children }) {
 
           {/* TOPBAR */}
           <div className="gc-topbar">
-            {/* MOBILE MENU */}
+            {/* MOBILE ICON */}
             <div
               className="gc-mobile-toggle"
               onClick={() => setIsSidebarOpen(true)}
@@ -296,7 +304,7 @@ export default function DashboardLayout({ children }) {
                   setSearch(e.target.value);
                   runSearch(e.target.value);
                 }}
-                placeholder="Search users, events..."
+                placeholder="Search users, events…"
                 style={{
                   width: "100%",
                   padding: "6px 10px",
@@ -346,6 +354,7 @@ export default function DashboardLayout({ children }) {
                           >
                             Users
                           </p>
+
                           {results.users.map((u) => (
                             <SearchItem
                               key={u._id}
@@ -381,6 +390,7 @@ export default function DashboardLayout({ children }) {
                           >
                             Events
                           </p>
+
                           {results.events.map((ev) => (
                             <SearchItem
                               key={ev._id}
@@ -400,7 +410,7 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* AVATAR */}
+            {/* USER AVATAR */}
             <img
               src={user.photo}
               onClick={() => navigate(`/${user.username}`)}
@@ -423,9 +433,9 @@ export default function DashboardLayout({ children }) {
   );
 }
 
-/* =========================================================
-   SUB COMPONENTS
-========================================================= */
+/* ============================================
+   COMPONENTS
+============================================ */
 
 function SidebarItem({ to, icon, label }) {
   return (
@@ -434,12 +444,12 @@ function SidebarItem({ to, icon, label }) {
       style={{
         display: "flex",
         alignItems: "center",
-        padding: "6px 8px",
         gap: 10,
-        textDecoration: "none",
-        color: "#c9d1d9",
+        padding: "6px 8px",
         borderRadius: 6,
         fontSize: 14,
+        color: "#c9d1d9",
+        textDecoration: "none",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
       onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

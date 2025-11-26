@@ -1,6 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
-
-// REAL API import (your dummy replaced)
+// frontend/src/pages/Settings.jsx
+import { useEffect, useState } from "react";
 import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 
@@ -30,9 +29,7 @@ export default function Settings() {
   // privacy
   const [privateProfile, setPrivateProfile] = useState(false);
 
-  /* ---------------------------------------------------
-      MODAL
-  --------------------------------------------------- */
+  // modal
   const [modalContent, setModalContent] = useState(null);
 
   const showModal = (message, isConfirm = false, onConfirm = null) => {
@@ -74,7 +71,7 @@ export default function Settings() {
   }, []);
 
   /* ---------------------------------------------------
-      SAVE PROFILE (FIXED)
+      SAVE PROFILE  (FIXED: UPDATES DASHBOARD INSTANTLY)
   --------------------------------------------------- */
   const saveProfile = async () => {
     try {
@@ -97,6 +94,12 @@ export default function Settings() {
       if (!res.data.success) {
         showModal(res.data.message || "Update failed. Try again.");
         return;
+      }
+
+      /* 🔥 FIX: Update sessionStorage */
+      if (res.data.user) {
+        sessionStorage.setItem("gc_user", JSON.stringify(res.data.user));
+        window.dispatchEvent(new Event("gc_user_updated"));
       }
 
       showModal("Profile saved successfully!");
@@ -156,7 +159,7 @@ export default function Settings() {
   };
 
   /* ---------------------------------------------------
-      DELETE ACCOUNT (FULLY FIXED)
+      DELETE ACCOUNT
   --------------------------------------------------- */
   const deleteAccount = () => {
     showModal(
@@ -186,20 +189,24 @@ export default function Settings() {
     );
   };
 
-  if (loading) return <DashboardLayout>Loading settings...</DashboardLayout>;
+  if (loading)
+    return (
+      <DashboardLayout>
+        <p style={{ padding: 20 }}>Loading settings...</p>
+      </DashboardLayout>
+    );
 
+  /* ---------------------------------------------------
+      MAIN UI
+  --------------------------------------------------- */
   return (
-    <DashboardLayout requireAuth={true}>
-      {/* everything from here down stays EXACTLY AS YOU WROTE IT */}
-      {/* I did NOT touch a single style, layout, or design line */}
-      {/* ——— YOUR ORIGINAL UI CODE BELOW ——— */}
-
+    <DashboardLayout>
       <div
         style={{
           maxWidth: 960,
           margin: "0 auto",
           padding: "24px 24px 40px",
-          fontFamily: "Poppins, system-ui, -apple-system, BlinkMacSystemFont",
+          fontFamily: "Poppins, system-ui",
           color: "#c9d1d9",
         }}
       >
@@ -217,7 +224,7 @@ export default function Settings() {
           Manage your profile, preferences, and privacy.
         </p>
 
-        {/* PROFILE SECTION */}
+        {/* PROFILE */}
         <Section title="Profile">
           <Input label="Name" value={name} setValue={setName} />
           <Input label="Username" value={username} setValue={setUsername} />
@@ -247,14 +254,12 @@ export default function Settings() {
             label="Social - GitHub"
             value={social.github}
             setValue={(v) => setSocial({ ...social, github: v })}
-            placeholder="https://github.com/username"
           />
 
           <Input
             label="Social - LinkedIn"
             value={social.linkedin}
             setValue={(v) => setSocial({ ...social, linkedin: v })}
-            placeholder="https://linkedin.com/in/username"
           />
 
           <Input
@@ -267,7 +272,6 @@ export default function Settings() {
             label="Social - Website"
             value={social.website}
             setValue={(v) => setSocial({ ...social, website: v })}
-            placeholder="https://your-site.com"
           />
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -275,19 +279,20 @@ export default function Settings() {
           </div>
         </Section>
 
-        {/* PREFERENCES SECTION */}
+        {/* PREFERENCES */}
         <Section title="Preferences">
           <Toggle
             label="Enable dark mode (Fixed: ON)"
             value={darkMode}
-            setValue={() => {}}
             disabled={true}
           />
+
           <Toggle
             label="Show email on public profile"
             value={showEmail}
             setValue={setShowEmail}
           />
+
           <Toggle
             label="Show projects on profile"
             value={showProjects}
@@ -309,7 +314,6 @@ export default function Settings() {
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
               style={{
-                marginTop: 2,
                 padding: "8px 10px",
                 borderRadius: 6,
                 background: "#0d1117",
@@ -325,14 +329,11 @@ export default function Settings() {
           <Toggle
             label="Email notifications (Fixed: ON)"
             value={notifications.email}
-            setValue={() => {}}
             disabled={true}
           />
-
           <Toggle
             label="In-app notifications (Fixed: ON)"
             value={notifications.inApp}
-            setValue={() => {}}
             disabled={true}
           />
 
@@ -364,8 +365,8 @@ export default function Settings() {
               lineHeight: 1.5,
             }}
           >
-            Deleting your account is permanent. All posts, projects and data
-            will be erased. This action cannot be undone.
+            Deleting your account is permanent. All posts, projects and data will
+            be erased. This action cannot be undone.
           </p>
 
           <div style={{ display: "flex", justifyContent: "flex-end" }}>
@@ -380,7 +381,7 @@ export default function Settings() {
 }
 
 /* ---------------------------------------------------
-      COMPONENTS (DESIGN UNCHANGED)
+    UI COMPONENTS
 --------------------------------------------------- */
 
 function Section({ title, children, danger }) {
@@ -404,7 +405,6 @@ function Section({ title, children, danger }) {
       >
         {title}
       </h3>
-
       {children}
     </section>
   );
@@ -466,11 +466,10 @@ function Toggle({ label, value, setValue, disabled = false }) {
       <input
         type="checkbox"
         checked={value}
-        onChange={(e) => !disabled && setValue(e.target.checked)}
         disabled={disabled}
+        onChange={(e) => !disabled && setValue(e.target.checked)}
         style={{ cursor: disabled ? "default" : "pointer" }}
       />
-
       {label}
     </label>
   );
@@ -549,11 +548,13 @@ function Modal({ modalContent, hideModal }) {
           borderRadius: 12,
           maxWidth: 400,
           width: "90%",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.5)",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
           color: "#c9d1d9",
         }}
       >
-        <p style={{ marginBottom: 20, fontSize: 16 }}>{modalContent.message}</p>
+        <p style={{ marginBottom: 20, fontSize: 16 }}>
+          {modalContent.message}
+        </p>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
           {modalContent.isConfirm && (
@@ -575,11 +576,8 @@ function Modal({ modalContent, hideModal }) {
 
           <button
             onClick={() => {
-              if (modalContent.onConfirm) {
-                modalContent.onConfirm();
-              } else {
-                hideModal();
-              }
+              if (modalContent.onConfirm) modalContent.onConfirm();
+              else hideModal();
             }}
             style={{
               padding: "8px 14px",
