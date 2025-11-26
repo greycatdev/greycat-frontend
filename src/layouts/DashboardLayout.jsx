@@ -5,8 +5,12 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true); // ⭐ FIX
+
+  /* ---------------- CACHE AUTH FIX ---------------- */
+  const cachedUser = JSON.parse(sessionStorage.getItem("gc_user"));
+
+  const [user, setUser] = useState(cachedUser || null);
+  const [authLoading, setAuthLoading] = useState(!cachedUser);
 
   // MOBILE SIDEBAR STATE
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -20,9 +24,7 @@ export default function DashboardLayout({ children }) {
 
   /* ---------------- SEARCH LOGIC ---------------- */
   const runSearch = (value) => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
 
     if (!value.trim()) {
       setVisible(false);
@@ -43,11 +45,12 @@ export default function DashboardLayout({ children }) {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setVisible(false);
       }
-      const isClickOnBackdrop = e.target.classList.contains("gc-sidebar-backdrop");
-      if (isSidebarOpen && isClickOnBackdrop) {
+
+      if (isSidebarOpen && e.target.classList.contains("gc-sidebar-backdrop")) {
         setIsSidebarOpen(false);
       }
     };
+
     document.addEventListener("click", handleClick);
     return () => document.removeEventListener("click", handleClick);
   }, [isSidebarOpen]);
@@ -64,8 +67,13 @@ export default function DashboardLayout({ children }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  /* ---------------- LOAD AUTH USER (SAFE) ---------------- */
+  /* ---------------- LOAD AUTH USER (ONLY IF NOT CACHED) ---------------- */
   useEffect(() => {
+    if (cachedUser) {
+      setAuthLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     async function check() {
@@ -75,6 +83,7 @@ export default function DashboardLayout({ children }) {
 
         if (res.data.authenticated) {
           setUser(res.data.user);
+          sessionStorage.setItem("gc_user", JSON.stringify(res.data.user));
         } else {
           navigate("/login");
         }
@@ -89,6 +98,7 @@ export default function DashboardLayout({ children }) {
     return () => (mounted = false);
   }, []);
 
+  /* ------------ AUTH UI ----------- */
   if (authLoading) {
     return (
       <div
@@ -120,6 +130,7 @@ export default function DashboardLayout({ children }) {
       </div>
     );
 
+  /* ---------------- PAGE LAYOUT ---------------- */
   return (
     <>
       {isSidebarOpen && (
@@ -217,9 +228,10 @@ export default function DashboardLayout({ children }) {
 
           {/* Logout */}
           <button
-            onClick={() =>
-              (window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`)
-            }
+            onClick={() => {
+              sessionStorage.removeItem("gc_user");
+              window.location.href = `${import.meta.env.VITE_BACKEND_URL}/auth/logout`;
+            }}
             style={{
               width: "100%",
               padding: "8px 10px",
@@ -243,10 +255,7 @@ export default function DashboardLayout({ children }) {
 
         {/* MAIN AREA */}
         <div className="gc-main">
-          <div
-            className="gc-mobile-brand-top"
-            onClick={() => navigate("/")}
-          >
+          <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
               <span className="gc-brand-text">Greycat</span>
@@ -255,20 +264,13 @@ export default function DashboardLayout({ children }) {
 
           {/* TOPBAR */}
           <div className="gc-topbar">
-            <div
-              className="gc-mobile-toggle"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <svg
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="currentColor"
-              >
+            <div className="gc-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
+              <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
                 <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
               </svg>
             </div>
 
+            {/* SEARCH */}
             <div
               style={{ position: "relative", flex: 1, margin: "0 10px" }}
               ref={searchRef}
@@ -382,6 +384,7 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
+            {/* USER AVATAR */}
             <img
               src={user.photo}
               onClick={() => navigate(`/${user.username}`)}
@@ -418,12 +421,8 @@ function SidebarItem({ to, icon, label }) {
         marginBottom: 2,
         textDecoration: "none",
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "#161b22";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-      }} // ⭐ FIXED THIS
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#161b22")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       <img
         src={`/icons/${icon}`}
@@ -450,7 +449,7 @@ function SearchItem({ children, onClick }) {
         color: "#c9d1d9",
       }}
       onMouseEnter={(e) => (e.currentTarget.style.background = "#21262d")}
-      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")} // ⭐ FIXED THIS
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
       {children}
     </div>
