@@ -1,5 +1,5 @@
 // frontend/src/pages/EventCreate.jsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -17,27 +17,6 @@ export default function EventCreate() {
   const [bannerPreview, setBannerPreview] = useState(null);
 
   const [loading, setLoading] = useState(false);
-  const [loaderTextIndex, setLoaderTextIndex] = useState(0);
-
-  // 🔥 Loader rotating texts
-  const loaderTexts = [
-    "Connecting to database…",
-    "Uploading image…",
-    "Securing connection…",
-    "Uploading content…",
-    "Finalizing event…",
-  ];
-
-  // 🔄 Rotate text every 1 sec
-  useEffect(() => {
-    if (!loading) return;
-
-    const interval = setInterval(() => {
-      setLoaderTextIndex((prev) => (prev + 1) % loaderTexts.length);
-    }, 900);
-
-    return () => clearInterval(interval);
-  }, [loading]);
 
   /* ---------------- HANDLE FILE UPLOAD ---------------- */
   const handleBannerChange = (e) => {
@@ -55,18 +34,12 @@ export default function EventCreate() {
       return;
     }
 
+    const start = Date.now();
     setLoading(true);
 
-    let bannerUrl = null;
+    let bannerUrl = "https://greycat-banners.vercel.app/default-event.jpg"; // fast fallback
 
-    // If user didn't upload → random banner
-    if (!bannerFile) {
-      bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
-        Date.now() + "-" + Math.random()
-      }`;
-    }
-
-    // User uploaded → upload
+    // If user uploaded → upload
     if (bannerFile) {
       try {
         const formData = new FormData();
@@ -94,56 +67,40 @@ export default function EventCreate() {
         bannerImage: bannerUrl,
       });
 
-      if (res.data.success) navigate(`/event/${res.data.event._id}`);
+      const elapsed = Date.now() - start;
+      const delay = Math.max(0, 800 - elapsed); // ensure smooth UX
+
+      setTimeout(() => {
+        if (res.data.success) navigate(`/event/${res.data.event._id}`);
+        setLoading(false);
+      }, delay);
     } catch (err) {
+      setLoading(false);
       alert("Event creation failed.");
     }
-
-    setLoading(false);
   };
 
   return (
     <DashboardLayout>
-      {/* 🔥 BEAUTIFUL CYBER LOADER */}
+      {/* ---------------- MINIMAL CLEAN LOADER ---------------- */}
       {loading && (
         <div style={loaderOverlay}>
-          <div style={loaderCard}>
-            <div className="loader-spinner"></div>
-
-            <p className="loader-text">{loaderTexts[loaderTextIndex]}</p>
+          <div style={loaderBox}>
+            <div className="clean-spinner"></div>
+            <p style={loaderText}>Creating event…</p>
           </div>
 
           <style>{`
-            .loader-spinner {
-              width: 50px;
-              height: 50px;
-              border: 5px solid rgba(255,255,255,0.2);
-              border-top: 5px solid #58a6ff;
+            .clean-spinner {
+              width: 34px;
+              height: 34px;
+              border: 3px solid rgba(255,255,255,0.25);
+              border-top-color: #ffffff;
               border-radius: 50%;
-              animation: spin 0.8s linear infinite, glow 1.5s ease-in-out infinite;
+              animation: spin 0.65s linear infinite;
             }
-
             @keyframes spin {
               to { transform: rotate(360deg); }
-            }
-
-            @keyframes glow {
-              0% { box-shadow: 0 0 5px #58a6ff; }
-              50% { box-shadow: 0 0 18px #58a6ff; }
-              100% { box-shadow: 0 0 5px #58a6ff; }
-            }
-
-            .loader-text {
-              margin-top: 18px;
-              font-size: 17px;
-              font-weight: 500;
-              color: #e6edf3;
-              animation: pulse 1.2s ease-in-out infinite;
-            }
-
-            @keyframes pulse {
-              0%, 100% { opacity: 0.4; }
-              50% { opacity: 1; }
             }
           `}</style>
         </div>
@@ -273,21 +230,28 @@ const loaderOverlay = {
   left: 0,
   width: "100vw",
   height: "100vh",
-  background: "rgba(0,0,0,0.85)",
+  background: "rgba(0,0,0,0.82)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   zIndex: 9999,
 };
 
-const loaderCard = {
+const loaderBox = {
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  padding: "30px 40px",
+  padding: "25px 35px",
   background: "#0d1117",
-  borderRadius: 12,
+  borderRadius: 10,
   border: "1px solid #30363d",
+};
+
+const loaderText = {
+  marginTop: 14,
+  fontSize: 15,
+  color: "#ffffff",
+  opacity: 0.85,
 };
 
 const pageWrapper = {
@@ -338,7 +302,6 @@ const input = {
   fontSize: 15,
   fontFamily: "Poppins",
   outline: "none",
-  transition: "0.25s",
 };
 
 const submitBtn = {
