@@ -15,27 +15,28 @@ export default function ChannelPage() {
   const [me, setMe] = useState(null);
   const socketRef = useRef(null);
 
-  // Responsive
+  /* ---------------------- RESPONSIVE ---------------------- */
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth <= 800);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    const resize = () => setIsMobile(window.innerWidth <= 800);
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // Fetch user
+  /* ---------------------- FETCH USER ---------------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
       if (res.data.authenticated) setMe(res.data.user);
     });
   }, []);
 
-  // Load channel
+  /* ---------------------- LOAD CHANNEL ---------------------- */
   const loadChannel = () => {
     API.get(`/channel/${id}`).then((res) => {
       if (res.data.success) {
         const ch = res.data.channel;
         setChannel(ch);
+
         if (me) {
           const joined = ch.members.some((m) => m._id === me._id);
           setIsMember(joined);
@@ -45,7 +46,7 @@ export default function ChannelPage() {
   };
 
   const loadMessages = () => {
-    API.get(`/channel/${id}/messages?page=0&limit=100`).then((res) => {
+    API.get(`/channel/${id}/messages?page=0&limit=200`).then((res) => {
       if (res.data.success) {
         setMessages(res.data.messages);
         scrollToBottom();
@@ -59,31 +60,26 @@ export default function ChannelPage() {
     loadMessages();
   }, [id, me]);
 
-  // SOCKET.io
+  /* ---------------------- SOCKET.IO ---------------------- */
   useEffect(() => {
-    socketRef.current = io("http://localhost:5000", {
-      withCredentials: true,
-    });
+    socketRef.current = io("http://localhost:5000", { withCredentials: true });
 
     socketRef.current.emit("joinRoom", id);
 
-    // RECEIVE NEW MESSAGE
+    // REAL-TIME RECEIVE MESSAGE (No channel check)
     socketRef.current.on("new_message", (msg) => {
-      if (msg.channel === id || msg.channel?._id === id) {
-        setMessages((prev) => {
-          if (prev.some((m) => m._id === msg._id)) return prev;
-          return [...prev, msg];
-        });
-        scrollToBottom();
-      }
+      setMessages((prev) => {
+        // avoid duplicates
+        if (prev.some((m) => m._id === msg._id)) return prev;
+        return [...prev, msg];
+      });
+      scrollToBottom();
     });
 
-    // DELETE MESSAGE
     socketRef.current.on("message_deleted", ({ msgId }) => {
       setMessages((prev) => prev.filter((m) => m._id !== msgId));
     });
 
-    // UPDATE REACTIONS
     socketRef.current.on("reaction_updated", (msg) => {
       setMessages((prev) =>
         prev.map((m) => (m._id === msg._id ? msg : m))
@@ -96,36 +92,36 @@ export default function ChannelPage() {
     };
   }, [id]);
 
-  // SCROLL
+  /* ---------------------- SCROLL ---------------------- */
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
-  // SEND MESSAGE (FIXED)
+  /* ---------------------- SEND MESSAGE ---------------------- */
   const sendMessage = async () => {
     if (!text.trim()) return;
 
     const res = await API.post(`/channel/${id}/message`, { text });
 
     if (res.data.success) {
-      // Show message instantly
+      // instantly display my message (temporary)
       setMessages((prev) => [...prev, res.data.message]);
       setText("");
       scrollToBottom();
     }
   };
 
-  // DELETE MESSAGE
+  /* ---------------------- DELETE MESSAGE ---------------------- */
   const deleteMessage = async (msgId) => {
     if (!window.confirm("Delete message?")) return;
     await API.delete(`/channel/message/${msgId}`);
   };
 
-  // REACT
+  /* ---------------------- REACT EMOJI ---------------------- */
   const react = async (msgId, emoji) => {
     await API.post(`/channel/message/${msgId}/react`, { emoji });
   };
 
-  // JOIN CHANNEL
+  /* ---------------------- JOIN / LEAVE ---------------------- */
   const joinChannel = async () => {
     await API.post(`/channel/${id}/join`);
     loadChannel();
@@ -136,7 +132,7 @@ export default function ChannelPage() {
     loadChannel();
   };
 
-  // THEME
+  /* ---------------------- THEME ---------------------- */
   const palette = {
     bgMain: "#0d0f12",
     bgCard: "#000000dd",
@@ -164,6 +160,7 @@ export default function ChannelPage() {
       </DashboardLayout>
     );
 
+  /* ---------------------- RENDER UI ---------------------- */
   return (
     <DashboardLayout requireAuth={true}>
       <div
@@ -200,7 +197,7 @@ export default function ChannelPage() {
               gap: 20,
             }}
           >
-            {/* CHAT AREA */}
+            {/* CHAT */}
             <div
               style={{
                 flex: 1,
@@ -224,8 +221,7 @@ export default function ChannelPage() {
                 {messages.map((m) => {
                   const avatar =
                     m.user?.photo ||
-                    "https://ui-avatars.com/api/?background=random&name=" +
-                      m.user?.username;
+                    `https://ui-avatars.com/api/?background=random&name=${m.user?.username}`;
 
                   return (
                     <div
@@ -288,16 +284,11 @@ export default function ChannelPage() {
                             )}
                           </div>
 
-                          <div
-                            style={{
-                              marginTop: 6,
-                              color: palette.textMain,
-                            }}
-                          >
+                          <div style={{ marginTop: 6, color: palette.textMain }}>
                             {m.text}
                           </div>
 
-                          {/* reactions */}
+                          {/* REACTIONS */}
                           <div
                             style={{
                               marginTop: 10,

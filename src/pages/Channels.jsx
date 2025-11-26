@@ -27,7 +27,7 @@ const getResponsiveStyles = () => {
 
     groupInput: {
       flex: 1,
-      minWidth: isMobile ? "auto" : 0,
+      minWidth: isMobile ? "100%" : 0,
     },
   };
 };
@@ -44,7 +44,10 @@ function useResponsiveStyles() {
   return styles;
 }
 
-/* ---------------------- PAGE COMPONENT ---------------------- */
+/* ------------------------------------------------------------- */
+/*                           PAGE                                 */
+/* ------------------------------------------------------------- */
+
 export default function Channels() {
   const navigate = useNavigate();
   const styles = useResponsiveStyles();
@@ -75,8 +78,8 @@ export default function Channels() {
     return raw
       .toLowerCase()
       .trim()
-      .replace(/\s+/g, "-") // space → dash
-      .replace(/[^a-z0-9-_]/g, ""); // remove invalid characters
+      .replace(/\s+/g, "-") // spaces → hyphens
+      .replace(/[^a-z0-9-_]/g, ""); // only allow a-z, 0-9, - _
   };
 
   /* ---------- CREATE CHANNEL ---------- */
@@ -86,12 +89,12 @@ export default function Channels() {
     const sanitizedName = cleanChannelName(name);
 
     if (!sanitizedName)
-      return alert("Channel name must contain letters or numbers");
+      return alert("Channel name must contain letters/numbers");
 
     const res = await API.post("/channel/create", {
       name: sanitizedName,
       title: title.trim() || sanitizedName,
-      description: desc,
+      description: desc.trim(),
     });
 
     if (res.data.success) {
@@ -124,7 +127,10 @@ export default function Channels() {
     );
   }
 
-  /* ---------------------- UI ---------------------- */
+  /* -------------------------------------------------------- */
+  /*                           UI                               */
+  /* -------------------------------------------------------- */
+
   return (
     <DashboardLayout>
       <div style={styles.mainContainer}>
@@ -143,11 +149,12 @@ export default function Channels() {
         <div
           style={{
             padding: 18,
-            borderRadius: 10,
+            borderRadius: 12,
             background: "#161b22",
             border: "1px solid #30363d",
             marginBottom: 30,
             boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
+            transition: "0.2s ease",
           }}
         >
           <h3
@@ -155,9 +162,10 @@ export default function Channels() {
               fontSize: 20,
               marginBottom: 10,
               color: "#c9d1d9",
+              fontWeight: 600,
             }}
           >
-            Create a Channel
+            Create a New Channel
           </h3>
 
           <div style={styles.inputGroup}>
@@ -193,10 +201,9 @@ export default function Channels() {
             Create Channel
           </button>
 
-          {/* PREVIEW SANITIZED NAME */}
           {name.trim() !== "" && (
             <p style={{ marginTop: 8, color: "#8b949e", fontSize: 14 }}>
-              Final channel URL name:{" "}
+              Final URL-safe name:{" "}
               <span style={{ color: "#58a6ff" }}>
                 {cleanChannelName(name)}
               </span>
@@ -220,7 +227,7 @@ export default function Channels() {
           <p style={{ color: "#8b949e" }}>No channels created yet.</p>
         )}
 
-        <div style={{ display: "grid", gap: 12 }}>
+        <div style={{ display: "grid", gap: 14 }}>
           {channels.map((c) => (
             <div
               key={c._id}
