@@ -4,7 +4,7 @@ import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
-/* ---------------------- RESPONSIVE SYSTEM ---------------------- */
+// Responsive utility
 const getResponsiveStyles = () => {
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 600;
 
@@ -27,7 +27,7 @@ const getResponsiveStyles = () => {
 
     groupInput: {
       flex: 1,
-      minWidth: isMobile ? "100%" : 0,
+      minWidth: isMobile ? "auto" : 0,
     },
   };
 };
@@ -36,137 +36,100 @@ function useResponsiveStyles() {
   const [styles, setStyles] = useState(getResponsiveStyles());
 
   useEffect(() => {
-    const handler = () => setStyles(getResponsiveStyles());
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
+    if (typeof window === "undefined") return;
+
+    const handleResize = () => setStyles(getResponsiveStyles());
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return styles;
 }
 
-/* ------------------------------------------------------------- */
-/*                           PAGE                                 */
-/* ------------------------------------------------------------- */
-
 export default function Channels() {
-  const navigate = useNavigate();
-  const styles = useResponsiveStyles();
-
   const [channels, setChannels] = useState([]);
   const [name, setName] = useState("");
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(true);
 
-  /* ---------- LOAD CHANNELS (FIXED setLoading logic) ---------- */
-  const loadChannels = async () => {
-    try {
-      const res = await API.get("/channel");
-      if (res.data.success) {
-        setChannels(res.data.channels);
-      }
-    } catch (err) {
-      console.error("Failed to load channels", err);
-      // Optional: alert or show error on screen
-    } finally {
-      // FIX: Set loading to false regardless of success/failure
+  const navigate = useNavigate();
+  const styles = useResponsiveStyles();
+
+  const loadChannels = () => {
+    API.get("/channel").then((res) => {
+      if (res.data.success) setChannels(res.data.channels);
       setLoading(false);
-    }
+    });
   };
 
   useEffect(() => {
     loadChannels();
   }, []);
 
-  /* ---------- CLEAN SANITIZATION (Allow spaces) ---------- */
-  const cleanChannelName = (raw) => {
-    // Note: The server-side check in channelRoutes.js enforces /^[a-z0-9-_]+$/
-    return raw
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, "-") // spaces → hyphens
-      .replace(/[^a-z0-9-_]/g, ""); // only allow a-z, 0-9, - _
-  };
-
-  /* ---------- CREATE CHANNEL ---------- */
   const createChannel = async () => {
     if (!name.trim()) return alert("Channel name is required");
 
-    const sanitizedName = cleanChannelName(name);
+    if (!/^[a-zA-Z0-9-_]+$/.test(name.trim()))
+      return alert("Channel name can only contain letters, numbers, - and _");
 
-    // This client-side check is good to prevent unnecessary server calls
-    if (!sanitizedName)
-      return alert("Channel name must contain letters/numbers");
+    const res = await API.post("/channel/create", {
+      name,
+      title,
+      description: desc,
+    });
 
-    try {
-      const res = await API.post("/channel/create", {
-        name: sanitizedName,
-        title: title.trim() || sanitizedName,
-        description: desc.trim(),
-      });
-
-      if (res.data.success) {
-        alert("Channel created successfully!");
-        setName("");
-        setTitle("");
-        setDesc("");
-        loadChannels();
-      } else {
-        alert(res.data.message || "Failed to create channel");
-      }
-    } catch (err) {
-      console.error("Create channel failed:", err);
-      alert("An error occurred during channel creation.");
+    if (res.data.success) {
+      alert("Channel created successfully!");
+      setName("");
+      setTitle("");
+      setDesc("");
+      loadChannels();
+    } else {
+      alert(res.data.message || "Create failed");
     }
   };
 
-  /* ---------- CLEAN LOADING SCREEN ---------- */
-  if (loading) {
+  // Fixed loading screen WITHOUT DashboardLayout nesting
+  if (loading)
     return (
-      <DashboardLayout>
-        <div
-          style={{
-            padding: 40,
-            color: "#c9d1d9",
-            background: "#0d1117",
-            minHeight: "100vh",
-            fontFamily: "Poppins",
-          }}
-        >
-          Loading channels…
-        </div>
-      </DashboardLayout>
+      <div
+        style={{
+          padding: 40,
+          color: "#c9d1d9",
+          background: "#0d1117",
+          minHeight: "100vh",
+          fontFamily: "Poppins",
+        }}
+      >
+        Loading channels…
+      </div>
     );
-  }
-
-  /* -------------------------------------------------------- */
-  /*                           UI                               */
-  /* -------------------------------------------------------- */
 
   return (
     <DashboardLayout>
       <div style={styles.mainContainer}>
+        {/* PAGE TITLE */}
         <h1
           style={{
             marginBottom: 20,
             fontSize: 28,
-            fontWeight: 700,
+            fontWeight: 600,
             color: "#c9d1d9",
           }}
         >
           Channels
         </h1>
 
-        {/* ---------------- CREATE CHANNEL ---------------- */}
+        {/* CREATE CHANNEL */}
         <div
           style={{
             padding: 18,
-            borderRadius: 12,
+            borderRadius: 10,
             background: "#161b22",
             border: "1px solid #30363d",
             marginBottom: 30,
             boxShadow: "0 4px 14px rgba(0,0,0,0.35)",
-            transition: "0.2s ease",
           }}
         >
           <h3
@@ -174,24 +137,22 @@ export default function Channels() {
               fontSize: 20,
               marginBottom: 10,
               color: "#c9d1d9",
-              fontWeight: 600,
             }}
           >
-            Create a New Channel
+            Create a Channel
           </h3>
 
+          {/* INPUT GROUP */}
           <div style={styles.inputGroup}>
             <input
-              placeholder="Channel name (spaces allowed)"
+              placeholder="channel-name (no spaces)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              // Added onKeyDown for Enter key submission
-              onKeyDown={(e) => e.key === "Enter" && createChannel()}
               style={{ ...inputStyle, ...styles.groupInput }}
             />
 
             <input
-              placeholder="Channel Title"
+              placeholder="Title (optional)"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               style={{ ...inputStyle, ...styles.groupInput }}
@@ -214,18 +175,9 @@ export default function Channels() {
           <button onClick={createChannel} style={createBtn}>
             Create Channel
           </button>
-
-          {name.trim() !== "" && (
-            <p style={{ marginTop: 8, color: "#8b949e", fontSize: 14 }}>
-              Final URL-safe name:{" "}
-              <span style={{ color: "#58a6ff" }}>
-                {cleanChannelName(name)}
-              </span>
-            </p>
-          )}
         </div>
 
-        {/* ---------------- CHANNEL LIST ---------------- */}
+        {/* CHANNEL LIST */}
         <h3
           style={{
             marginBottom: 15,
@@ -241,7 +193,7 @@ export default function Channels() {
           <p style={{ color: "#8b949e" }}>No channels created yet.</p>
         )}
 
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 12 }}>
           {channels.map((c) => (
             <div
               key={c._id}
@@ -249,11 +201,8 @@ export default function Channels() {
               onClick={() => navigate(`/channel/${c._id}`)}
             >
               <div style={{ flex: 1 }}>
-                <div style={channelTitle}># {c.title || c.name}</div>
+                <div style={channelTitle}>{c.title || c.name}</div>
                 <div style={channelDesc}>{c.description}</div>
-                <div style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>
-                  Members: {c.members?.length || 0}
-                </div>
               </div>
 
               <button
@@ -273,7 +222,7 @@ export default function Channels() {
   );
 }
 
-/* ---------------------- STYLES ---------------------- */
+/* ---------------------- GITHUB STYLE INPUTS ---------------------- */
 
 const inputStyle = {
   padding: "10px 12px",
@@ -298,6 +247,8 @@ const createBtn = {
   fontSize: 16,
   transition: "0.2s",
 };
+
+/* ---------------------- CHANNEL CARD ---------------------- */
 
 const channelCard = {
   padding: 16,
