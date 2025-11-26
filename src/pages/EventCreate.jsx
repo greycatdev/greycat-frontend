@@ -1,5 +1,5 @@
 // frontend/src/pages/EventCreate.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -16,7 +16,28 @@ export default function EventCreate() {
   const [bannerFile, setBannerFile] = useState(null);
   const [bannerPreview, setBannerPreview] = useState(null);
 
-  const [loading, setLoading] = useState(false); // 🔥 loader state
+  const [loading, setLoading] = useState(false);
+  const [loaderTextIndex, setLoaderTextIndex] = useState(0);
+
+  // 🔥 Loader rotating texts
+  const loaderTexts = [
+    "Connecting to database…",
+    "Uploading image…",
+    "Securing connection…",
+    "Uploading content…",
+    "Finalizing event…",
+  ];
+
+  // 🔄 Rotate text every 1 sec
+  useEffect(() => {
+    if (!loading) return;
+
+    const interval = setInterval(() => {
+      setLoaderTextIndex((prev) => (prev + 1) % loaderTexts.length);
+    }, 900);
+
+    return () => clearInterval(interval);
+  }, [loading]);
 
   /* ---------------- HANDLE FILE UPLOAD ---------------- */
   const handleBannerChange = (e) => {
@@ -34,23 +55,23 @@ export default function EventCreate() {
       return;
     }
 
-    setLoading(true); // 🔥 SHOW LOADER
+    setLoading(true);
 
     let bannerUrl = null;
 
-    // Random banner (if no upload)
+    // If user didn't upload → random banner
     if (!bannerFile) {
       bannerUrl = `https://source.unsplash.com/random/1200x400?event,cyber,tech,hackathon,neon&sig=${
         Date.now() + "-" + Math.random()
       }`;
     }
 
-    // If user uploaded → upload to backend
+    // User uploaded → upload
     if (bannerFile) {
-      const formData = new FormData();
-      formData.append("banner", bannerFile);
-
       try {
+        const formData = new FormData();
+        formData.append("banner", bannerFile);
+
         const uploadRes = await API.post("/upload/banner", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -63,7 +84,6 @@ export default function EventCreate() {
       }
     }
 
-    // Create event
     try {
       const res = await API.post("/event/create", {
         title,
@@ -74,9 +94,7 @@ export default function EventCreate() {
         bannerImage: bannerUrl,
       });
 
-      if (res.data.success) {
-        navigate(`/event/${res.data.event._id}`);
-      }
+      if (res.data.success) navigate(`/event/${res.data.event._id}`);
     } catch (err) {
       alert("Event creation failed.");
     }
@@ -86,37 +104,57 @@ export default function EventCreate() {
 
   return (
     <DashboardLayout>
-      {/* 🔥 FULL PAGE LOADING OVERLAY */}
+      {/* 🔥 BEAUTIFUL CYBER LOADER */}
       {loading && (
         <div style={loaderOverlay}>
-          <div style={loaderBox}>
-            <div className="spinner"></div>
-            <p style={{ marginTop: 12, fontSize: 16 }}>Creating Event…</p>
+          <div style={loaderCard}>
+            <div className="loader-spinner"></div>
+
+            <p className="loader-text">{loaderTexts[loaderTextIndex]}</p>
           </div>
 
-          {/* Spinner CSS */}
           <style>{`
-            .spinner {
-              width: 38px;
-              height: 38px;
-              border: 4px solid #ffffff30;
-              border-top-color: #fff;
+            .loader-spinner {
+              width: 50px;
+              height: 50px;
+              border: 5px solid rgba(255,255,255,0.2);
+              border-top: 5px solid #58a6ff;
               border-radius: 50%;
-              animation: spin 0.8s linear infinite;
+              animation: spin 0.8s linear infinite, glow 1.5s ease-in-out infinite;
             }
 
             @keyframes spin {
               to { transform: rotate(360deg); }
             }
+
+            @keyframes glow {
+              0% { box-shadow: 0 0 5px #58a6ff; }
+              50% { box-shadow: 0 0 18px #58a6ff; }
+              100% { box-shadow: 0 0 5px #58a6ff; }
+            }
+
+            .loader-text {
+              margin-top: 18px;
+              font-size: 17px;
+              font-weight: 500;
+              color: #e6edf3;
+              animation: pulse 1.2s ease-in-out infinite;
+            }
+
+            @keyframes pulse {
+              0%, 100% { opacity: 0.4; }
+              50% { opacity: 1; }
+            }
           `}</style>
         </div>
       )}
 
+      {/* ---------------- PAGE CONTENT ---------------- */}
       <div style={pageWrapper}>
         <div style={card}>
           <h2 style={formTitle}>Create New Event</h2>
 
-          {/* BANNER INPUT */}
+          {/* Banner Upload */}
           <div style={{ marginBottom: 32 }}>
             <label style={labelStyle}>Event Banner</label>
 
@@ -126,7 +164,7 @@ export default function EventCreate() {
                   bannerPreview ||
                   "https://via.placeholder.com/1200x400/0d1117/ffffff?text=Event+Banner"
                 }
-                alt="Event banner"
+                alt="Event Banner"
                 style={bannerImage}
               />
 
@@ -228,23 +266,28 @@ function TextAreaField({ label, value, setValue, placeholder }) {
 }
 
 /* ---------------- STYLES ---------------- */
+
 const loaderOverlay = {
   position: "fixed",
   top: 0,
   left: 0,
   width: "100vw",
   height: "100vh",
-  background: "rgba(0,0,0,0.72)",
+  background: "rgba(0,0,0,0.85)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   zIndex: 9999,
-  color: "white",
-  fontFamily: "Poppins",
 };
 
-const loaderBox = {
-  textAlign: "center",
+const loaderCard = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  padding: "30px 40px",
+  background: "#0d1117",
+  borderRadius: 12,
+  border: "1px solid #30363d",
 };
 
 const pageWrapper = {
