@@ -45,7 +45,7 @@ function useResponsiveStyles() {
 }
 
 /* ------------------------------------------------------------- */
-/*                           PAGE                                 */
+/*                           PAGE                                 */
 /* ------------------------------------------------------------- */
 
 export default function Channels() {
@@ -58,15 +58,20 @@ export default function Channels() {
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(true);
 
-  /* ---------- LOAD CHANNELS ---------- */
+  /* ---------- LOAD CHANNELS (FIXED setLoading logic) ---------- */
   const loadChannels = async () => {
     try {
       const res = await API.get("/channel");
-      if (res.data.success) setChannels(res.data.channels);
+      if (res.data.success) {
+        setChannels(res.data.channels);
+      }
     } catch (err) {
       console.error("Failed to load channels", err);
+      // Optional: alert or show error on screen
+    } finally {
+      // FIX: Set loading to false regardless of success/failure
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -75,6 +80,7 @@ export default function Channels() {
 
   /* ---------- CLEAN SANITIZATION (Allow spaces) ---------- */
   const cleanChannelName = (raw) => {
+    // Note: The server-side check in channelRoutes.js enforces /^[a-z0-9-_]+$/
     return raw
       .toLowerCase()
       .trim()
@@ -88,23 +94,29 @@ export default function Channels() {
 
     const sanitizedName = cleanChannelName(name);
 
+    // This client-side check is good to prevent unnecessary server calls
     if (!sanitizedName)
       return alert("Channel name must contain letters/numbers");
 
-    const res = await API.post("/channel/create", {
-      name: sanitizedName,
-      title: title.trim() || sanitizedName,
-      description: desc.trim(),
-    });
+    try {
+      const res = await API.post("/channel/create", {
+        name: sanitizedName,
+        title: title.trim() || sanitizedName,
+        description: desc.trim(),
+      });
 
-    if (res.data.success) {
-      alert("Channel created successfully!");
-      setName("");
-      setTitle("");
-      setDesc("");
-      loadChannels();
-    } else {
-      alert(res.data.message || "Failed to create channel");
+      if (res.data.success) {
+        alert("Channel created successfully!");
+        setName("");
+        setTitle("");
+        setDesc("");
+        loadChannels();
+      } else {
+        alert(res.data.message || "Failed to create channel");
+      }
+    } catch (err) {
+      console.error("Create channel failed:", err);
+      alert("An error occurred during channel creation.");
     }
   };
 
@@ -128,7 +140,7 @@ export default function Channels() {
   }
 
   /* -------------------------------------------------------- */
-  /*                           UI                               */
+  /*                           UI                               */
   /* -------------------------------------------------------- */
 
   return (
@@ -173,6 +185,8 @@ export default function Channels() {
               placeholder="Channel name (spaces allowed)"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              // Added onKeyDown for Enter key submission
+              onKeyDown={(e) => e.key === "Enter" && createChannel()}
               style={{ ...inputStyle, ...styles.groupInput }}
             />
 
@@ -235,8 +249,11 @@ export default function Channels() {
               onClick={() => navigate(`/channel/${c._id}`)}
             >
               <div style={{ flex: 1 }}>
-                <div style={channelTitle}>{c.title || c.name}</div>
+                <div style={channelTitle}># {c.title || c.name}</div>
                 <div style={channelDesc}>{c.description}</div>
+                <div style={{ color: "#8b949e", fontSize: 12, marginTop: 4 }}>
+                  Members: {c.members?.length || 0}
+                </div>
               </div>
 
               <button

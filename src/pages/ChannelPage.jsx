@@ -38,7 +38,8 @@ export default function ChannelPage() {
         setChannel(ch);
 
         if (me) {
-          const joined = ch.members.some((m) => m._id === me._id);
+          // Fix: Ensure comparison uses toString() for consistency
+          const joined = ch.members.some((m) => m._id.toString() === me._id.toString());
           setIsMember(joined);
         }
       }
@@ -62,27 +63,32 @@ export default function ChannelPage() {
 
   /* ---------------------- SOCKET.IO ---------------------- */
   useEffect(() => {
+    // Note: If deployed, ensure this points to your deployed backend URL, not localhost
     socketRef.current = io("http://localhost:5000", { withCredentials: true });
 
     socketRef.current.emit("joinRoom", id);
 
-    // REAL-TIME RECEIVE MESSAGE (No channel check)
+    // REAL-TIME RECEIVE MESSAGE (Fix: Use toString() for comparison and rely only on socket event)
     socketRef.current.on("new_message", (msg) => {
       setMessages((prev) => {
-        // avoid duplicates
-        if (prev.some((m) => m._id === msg._id)) return prev;
+        // Fix: Use toString() for reliable ID comparison
+        if (prev.some((m) => m._id.toString() === msg._id.toString())) return prev;
         return [...prev, msg];
       });
       scrollToBottom();
     });
 
+    // Fix: Use toString() for comparison
     socketRef.current.on("message_deleted", ({ msgId }) => {
-      setMessages((prev) => prev.filter((m) => m._id !== msgId));
+      setMessages((prev) => prev.filter((m) => m._id.toString() !== msgId.toString()));
     });
 
-    socketRef.current.on("reaction_updated", (msg) => {
+    // Fix: Use toString() for comparison to ensure real-time reaction update works
+    socketRef.current.on("reaction_updated", (updatedMsg) => {
       setMessages((prev) =>
-        prev.map((m) => (m._id === msg._id ? msg : m))
+        prev.map((m) => 
+          (m._id.toString() === updatedMsg._id.toString() ? updatedMsg : m)
+        )
       );
     });
 
@@ -100,13 +106,19 @@ export default function ChannelPage() {
   const sendMessage = async () => {
     if (!text.trim()) return;
 
-    const res = await API.post(`/channel/${id}/message`, { text });
+    // Preserve text while clearing input for better UX
+    const messageText = text; 
+    setText(""); 
 
-    if (res.data.success) {
-      // instantly display my message (temporary)
-      setMessages((prev) => [...prev, res.data.message]);
-      setText("");
-      scrollToBottom();
+    try {
+      // FIX: Rely only on the Socket.IO event 'new_message' for state update.
+      // Removed the local `setMessages` call to prevent duplication.
+      await API.post(`/channel/${id}/message`, { text: messageText });
+      // Scrolling will happen when 'new_message' is received.
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      // Optional: Handle error or restore text if API call failed
+      // setText(messageText);
     }
   };
 
@@ -114,17 +126,20 @@ export default function ChannelPage() {
   const deleteMessage = async (msgId) => {
     if (!window.confirm("Delete message?")) return;
     await API.delete(`/channel/message/${msgId}`);
+    // State will be updated by the 'message_deleted' socket event
   };
 
   /* ---------------------- REACT EMOJI ---------------------- */
   const react = async (msgId, emoji) => {
     await API.post(`/channel/message/${msgId}/react`, { emoji });
+    // State will be updated by the 'reaction_updated' socket event
   };
 
   /* ---------------------- JOIN / LEAVE ---------------------- */
   const joinChannel = async () => {
     await API.post(`/channel/${id}/join`);
     loadChannel();
+    loadMessages(); // Load messages upon joining, in case the channel was private
   };
 
   const leaveChannel = async () => {
@@ -268,8 +283,8 @@ export default function ChannelPage() {
                               </small>
                             </div>
 
-                            {(me?._id === m.user?._id ||
-                              channel.moderators.includes(me?._id)) && (
+                            {(me?._id.toString() === m.user?._id.toString() ||
+                              channel.moderators.some(modId => modId.toString() === me?._id.toString())) && (
                               <button
                                 onClick={() => deleteMessage(m._id)}
                                 style={{
@@ -333,6 +348,11 @@ export default function ChannelPage() {
                   <input
                     value={text}
                     onChange={(e) => setText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        sendMessage();
+                      }
+                    }}
                     placeholder={`Message #${channel.name}`}
                     style={{
                       flex: 1,
