@@ -6,26 +6,18 @@ import io from "socket.io-client";
 
 export default function ChannelPage() {
   const { id } = useParams();
-
   const [channel, setChannel] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
-  const [isMember, setIsMember] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  // ❗ me is no longer fetched again (DashboardLayout already provides it)
-  const [me, setMe] = useState(() => {
-    const user = sessionStorage.getItem("gc_user");
-    return user ? JSON.parse(user) : null;
-  });
-
   const bottomRef = useRef();
+
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [me, setMe] = useState(null);
   const socketRef = useRef(null);
 
-  // ---------- RESPONSIVE ----------
-  const [isMobile, setIsMobile] = useState(
-    typeof window !== "undefined" && window.innerWidth <= 800
-  );
+  // Responsive state
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 800);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 800);
@@ -33,49 +25,46 @@ export default function ChannelPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // ---------- LOAD CHANNEL ----------
-  const loadChannel = async () => {
-    const res = await API.get(`/channel/${id}`);
-    if (res.data.success) {
-      const ch = res.data.channel;
-      setChannel(ch);
-
-      if (me) {
-        const joined = ch.members.some((m) => m._id === me._id);
-        setIsMember(joined);
-      }
-    }
-  };
-
-  // ---------- LOAD MESSAGES ----------
-  const loadMessages = async () => {
-    const res = await API.get(`/channel/${id}/messages?page=0&limit=200`);
-    if (res.data.success) {
-      setMessages(res.data.messages);
-      scrollToBottom();
-    }
-  };
-
-  // ---------- INITIAL LOAD ----------
   useEffect(() => {
-    if (!id || !me) return;
+    API.get("/auth/user").then((res) => {
+      if (res.data.authenticated) setMe(res.data.user);
+    });
+  }, []);
 
-    (async () => {
-      await loadChannel();
-      await loadMessages();
-      setLoading(false);
-    })();
-  }, [id, me]);
+  const loadChannel = () => {
+    API.get(`/channel/${id}`).then((res) => {
+      if (res.data.success) {
+        setChannel(res.data.channel);
+        if (me) {
+          const joined = res.data.channel.members.some((m) => m._id === me._id);
+          setIsMember(joined);
+        }
+      }
+    });
+  };
 
-  // ---------- SOCKET ----------
+  const loadMessages = () => {
+    API.get(`/channel/${id}/messages?page=0&limit=100`).then((res) => {
+      if (res.data.success) {
+        setMessages(res.data.messages);
+        scrollToBottom();
+      }
+    });
+  };
+
   useEffect(() => {
     if (!id) return;
+    loadChannel();
+    loadMessages();
+  }, [id, me]);
 
-    socketRef.current = io(API.defaults.baseURL, { withCredentials: true });
-
-    socketRef.current.on("connect", () => {
-      socketRef.current.emit("joinRoom", id);
+  useEffect(() => {
+    socketRef.current = io("http://localhost:5000", {
+      withCredentials: true,
     });
+
+    socketRef.current.on("connect", () => setSocketConnected(true));
+    socketRef.current.emit("joinRoom", id);
 
     socketRef.current.on("new_message", (msg) => {
       if (msg.channel === id || msg.channel?._id === id) {
@@ -89,9 +78,7 @@ export default function ChannelPage() {
     });
 
     socketRef.current.on("reaction_updated", (msg) => {
-      setMessages((prev) =>
-        prev.map((m) => (m._id === msg._id ? msg : m))
-      );
+      setMessages((prev) => prev.map((m) => (m._id === msg._id ? msg : m)));
     });
 
     return () => {
@@ -100,14 +87,13 @@ export default function ChannelPage() {
     };
   }, [id]);
 
-  // ---------- HELPERS ----------
   const scrollToBottom = () =>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
   const sendMessage = async () => {
     if (!text.trim()) return;
-    await API.post(`/channel/${id}/message`, { text });
-    setText("");
+    const res = await API.post(`/channel/${id}/message`, { text });
+    if (res.data.success) setText("");
   };
 
   const deleteMessage = async (msgId) => {
@@ -129,7 +115,7 @@ export default function ChannelPage() {
     loadChannel();
   };
 
-  // ----------- DARK THEME PALETTE -----------
+  // ---------- DARK THEME & RESPONSIVE STYLES ----------
   const palette = {
     bgCard: "#000000cc",
     accent: "#00598dff",
@@ -138,91 +124,147 @@ export default function ChannelPage() {
     textLight: "#969ba1",
     danger: "#e74c3c",
     surface: "#181A20",
-    bgMain: "#0d1117",
   };
 
-  // ----------- CLEAN LOADING SCREEN -----------
-  if (loading) {
+  const pageStyle = {
+    background: palette.bgMain,
+    minHeight: "100vh",
+    color: palette.textMain,
+    paddingTop: 30,
+    paddingBottom: 40,
+  };
+
+  const containerStyle = {
+    maxWidth: 980,
+    margin: "0 auto",
+  };
+
+  const headingStyle = {
+    fontSize: "2em",
+    fontWeight: 700,
+    letterSpacing: "1px",
+    margin: isMobile ? "0 0 20px 6px" : "0 0 30px 0",
+    color: palette.accent,
+  };
+
+  const flexStyle = {
+    display: "flex",
+    gap: isMobile ? 0 : 24,
+    alignItems: isMobile ? "stretch" : "flex-start",
+    flexDirection: isMobile ? "column" : "row",
+  };
+
+  const chatBoxStyle = {
+    flex: 1,
+    border: `1px solid ${palette.border}`,
+    padding: 12,
+    borderRadius: 8,
+    minHeight: 460,
+    display: "flex",
+    flexDirection: "column",
+    background: palette.bgCard,
+    marginBottom: isMobile ? 28 : 0,
+  };
+
+  const chatScrollStyle = {
+    overflowY: "auto",
+    flex: 1,
+    paddingRight: 6,
+  };
+
+  const messageStyle = {
+    padding: 10,
+    marginBottom: 10,
+    borderRadius: 8,
+    background: palette.surface,
+    boxShadow: "0 0 6px 0 rgba(0,0,0,0.06)",
+    color: palette.textMain,
+  };
+
+  const sidebarStyle = {
+    width: isMobile ? "100%" : 260,
+    position: isMobile ? "static" : "sticky",
+    top: 80,
+    alignSelf: isMobile ? "unset" : "flex-start",
+    marginBottom: isMobile ? 6 : 0,
+  };
+
+  const sidebarCardStyle = {
+    padding: 15,
+    border: `1px solid ${palette.border}`,
+    borderRadius: 8,
+    background: palette.bgCard,
+    color: palette.textMain,
+    boxSizing: "border-box",
+  };
+
+  const leaveBtnStyle = {
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: "#301c1c",
+    border: `1px solid ${palette.danger}`,
+    color: palette.danger,
+    width: "100%",
+    textAlign: "center",
+    fontWeight: 700,
+    marginTop: 12,
+    cursor: "pointer",
+  };
+
+  const joinBtnStyle = {
+    padding: "8px 12px",
+    borderRadius: 8,
+    background: palette.bgMain,
+    border: `1px solid ${palette.accent}`,
+    color: palette.textMain,
+    width: "100%",
+    textAlign: "center",
+    fontWeight: 700,
+    marginTop: 12,
+    cursor: "pointer",
+  };
+
+  const sendBtnStyle = {
+    padding: "10px 16px",
+    borderRadius: 8,
+    background: palette.accent,
+    color: "#fff",
+    border: "none",
+    fontWeight: 600,
+  };
+
+  const inputStyle = {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    border: `1px solid ${palette.border}`,
+    background: palette.surface,
+    color: palette.textMain,
+  };
+
+  if (!channel)
     return (
       <DashboardLayout>
-        <div
-          style={{
-            background: palette.bgMain,
-            minHeight: "100vh",
-            padding: 40,
-            fontFamily: "Poppins",
-            color: palette.textMain,
-          }}
-        >
-          Loading channel…
-        </div>
+        <div style={pageStyle}>Loading channel...</div>
       </DashboardLayout>
     );
-  }
 
-  // ----------- PAGE UI -----------
   return (
-    <DashboardLayout>
-      <div
-        style={{
-          background: palette.bgMain,
-          minHeight: "100vh",
-          color: palette.textMain,
-          paddingTop: 30,
-          paddingBottom: 40,
-          maxWidth: 980,
-          margin: "0 auto",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "2em",
-            fontWeight: 700,
-            marginBottom: 30,
-            color: palette.accent,
-          }}
-        >
-          # {channel.title || channel.name}
-        </h2>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: isMobile ? "column" : "row",
-            gap: isMobile ? 0 : 24,
-          }}
-        >
-          {/* ---------- CHAT BOX ---------- */}
-          <div
-            style={{
-              flex: 1,
-              border: `1px solid ${palette.border}`,
-              padding: 12,
-              borderRadius: 8,
-              background: palette.bgCard,
-              display: "flex",
-              flexDirection: "column",
-              minHeight: 460,
-              marginBottom: isMobile ? 26 : 0,
-            }}
-          >
-            <div style={{ flex: 1, overflowY: "auto", paddingRight: 6 }}>
+    <DashboardLayout requireAuth={true}>
+      <div style={{ ...pageStyle, ...containerStyle }}>
+        <h2 style={headingStyle}># {channel.title || channel.name}</h2>
+        <div style={flexStyle}>
+          {/* CHAT BOX */}
+          <div style={chatBoxStyle}>
+            <div style={chatScrollStyle}>
               {messages.map((m) => {
                 const photo =
                   m.user?.photo ||
-                  "https://ui-avatars.com/api/?name=" + m.user?.username;
+                  "https://ui-avatars.com/api/?background=random&name=" +
+                    m.user?.username;
 
                 return (
-                  <div
-                    key={m._id}
-                    style={{
-                      padding: 10,
-                      marginBottom: 10,
-                      borderRadius: 8,
-                      background: palette.surface,
-                      color: palette.textMain,
-                    }}
-                  >
+                  <div key={m._id} style={messageStyle}>
                     <div style={{ display: "flex", gap: 12 }}>
                       <img
                         src={photo}
@@ -233,6 +275,7 @@ export default function ChannelPage() {
                           objectFit: "cover",
                           border: `2px solid ${palette.accent}`,
                         }}
+                        alt="user avatar"
                       />
 
                       <div style={{ flex: 1 }}>
@@ -240,6 +283,7 @@ export default function ChannelPage() {
                           style={{
                             display: "flex",
                             justifyContent: "space-between",
+                            alignItems: "center",
                           }}
                         >
                           <div>
@@ -250,31 +294,33 @@ export default function ChannelPage() {
                               style={{
                                 marginLeft: 8,
                                 color: palette.textLight,
+                                fontSize: "0.93em",
                               }}
                             >
                               {new Date(m.createdAt).toLocaleTimeString()}
                             </small>
                           </div>
-
-                          {(m.user?._id === me._id ||
-                            channel.moderators?.includes(me._id)) && (
-                            <button
-                              onClick={() => deleteMessage(m._id)}
-                              style={{
-                                background: "transparent",
-                                border: "none",
-                                color: palette.danger,
-                                cursor: "pointer",
-                                fontWeight: 700,
-                              }}
-                            >
-                              Delete
-                            </button>
-                          )}
+                          {me &&
+                            (m.user?._id === me._id ||
+                              channel.moderators.includes(me._id)) && (
+                              <button
+                                onClick={() => deleteMessage(m._id)}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: palette.danger,
+                                  cursor: "pointer",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Delete
+                              </button>
+                            )}
                         </div>
-
-                        <div style={{ marginTop: 6 }}>{m.text}</div>
-
+                        <div style={{ marginTop: 6, color: palette.textMain }}>
+                          {m.text}
+                        </div>
+                        {/* reactions */}
                         <div
                           style={{
                             marginTop: 10,
@@ -293,9 +339,11 @@ export default function ChannelPage() {
                                 style={{
                                   border: `1px solid ${palette.border}`,
                                   background: palette.bgCard,
+                                  color: palette.textMain,
                                   padding: "4px 8px",
                                   borderRadius: 6,
-                                  fontSize: 18,
+                                  fontWeight: 700,
+                                  fontSize: "1em",
                                   cursor: "pointer",
                                 }}
                               >
@@ -311,111 +359,44 @@ export default function ChannelPage() {
               })}
               <div ref={bottomRef} />
             </div>
-
             {/* MESSAGE INPUT */}
-            {isMember ? (
+            {isMember && (
               <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   placeholder={`Message #${channel.name}`}
-                  style={{
-                    flex: 1,
-                    padding: 10,
-                    borderRadius: 8,
-                    border: `1px solid ${palette.border}`,
-                    background: palette.surface,
-                    color: palette.textMain,
-                  }}
+                  style={inputStyle}
                 />
-                <button
-                  onClick={sendMessage}
-                  style={{
-                    padding: "10px 16px",
-                    borderRadius: 8,
-                    background: palette.accent,
-                    color: "#fff",
-                    border: "none",
-                    fontWeight: 600,
-                  }}
-                >
+                <button onClick={sendMessage} style={sendBtnStyle}>
                   Send
                 </button>
               </div>
-            ) : (
-              <button
-                onClick={joinChannel}
-                style={{
-                  marginTop: 10,
-                  padding: "10px",
-                  width: "100%",
-                  borderRadius: 8,
-                  border: `1px solid ${palette.accent}`,
-                  background: palette.bgMain,
-                  color: palette.textMain,
-                  fontWeight: 700,
-                }}
-              >
-                Join Channel to Chat
-              </button>
+            )}
+            {!isMember && (
+              <div style={{ marginTop: 10, textAlign: "center" }}>
+                <button onClick={joinChannel} style={joinBtnStyle}>
+                  Join Channel to Chat
+                </button>
+              </div>
             )}
           </div>
-
-          {/* ---------- SIDEBAR ---------- */}
-          <div
-            style={{
-              width: isMobile ? "100%" : 260,
-              position: isMobile ? "static" : "sticky",
-              top: 80,
-            }}
-          >
-            <div
-              style={{
-                padding: 15,
-                borderRadius: 8,
-                border: `1px solid ${palette.border}`,
-                background: palette.bgCard,
-              }}
-            >
-              <h4 style={{ margin: "0 0 10px 0", color: palette.accent }}>
+          {/* SIDEBAR */}
+          <div style={sidebarStyle}>
+            <div style={sidebarCardStyle}>
+              <h4 style={{ margin: "0 0 12px 0", color: palette.accent }}>
                 About
               </h4>
-
               <p style={{ color: palette.textLight }}>{channel.description}</p>
               <p>
-                <b>Members:</b> {channel.members.length}
+                <b>Members:</b> {channel.members?.length}
               </p>
-
               {isMember ? (
-                <button
-                  onClick={leaveChannel}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: 8,
-                    border: `1px solid ${palette.danger}`,
-                    background: "#301c1c",
-                    color: palette.danger,
-                    fontWeight: 700,
-                    marginTop: 12,
-                  }}
-                >
+                <button onClick={leaveChannel} style={leaveBtnStyle}>
                   Leave Channel
                 </button>
               ) : (
-                <button
-                  onClick={joinChannel}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: 8,
-                    border: `1px solid ${palette.accent}`,
-                    background: palette.bgMain,
-                    color: palette.textMain,
-                    fontWeight: 700,
-                    marginTop: 12,
-                  }}
-                >
+                <button onClick={joinChannel} style={joinBtnStyle}>
                   Join Channel
                 </button>
               )}
