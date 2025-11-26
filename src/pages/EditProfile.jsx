@@ -20,7 +20,7 @@ export default function EditProfile() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  /* ---------- RESPONSIVE LISTENER ---------- */
+  /* ---------------- RESPONSIVE ---------------- */
   useEffect(() => {
     const r = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener("resize", r);
@@ -41,21 +41,35 @@ export default function EditProfile() {
     });
   }, []);
 
-  /* ---------------- SAVE ---------------- */
+  /* ---------------------------------------------------------
+       SAVE PROFILE (FIXED)
+  --------------------------------------------------------- */
   const saveChanges = async () => {
-    const res = await API.put("/user/update", {
+    const payload = {
+      name: user.name, // unchanged here
+      username: user.username, // unchanged
       bio,
       skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
       social,
-    });
+      location: user.location || {},
+    };
+
+    const res = await API.post("/settings/profile", payload);
 
     if (res.data.success) {
+      const updated = res.data.user;
+
+      // ⭐ UPDATE SESSION CACHE IMMEDIATELY (dashboard uses this)
+      sessionStorage.setItem("gc_user", JSON.stringify(updated));
+
       alert("Profile updated!");
-      navigate(`/${user.username}`);
+      navigate(`/${updated.username}`);
     }
   };
 
-  /* ---------------- PHOTO UPLOAD ---------------- */
+  /* ---------------------------------------------------------
+       PHOTO UPLOAD (NOW ALSO UPDATES SESSION)
+  --------------------------------------------------------- */
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -70,7 +84,18 @@ export default function EditProfile() {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (res.data.success) setPhotoPreview(res.data.photo);
+      if (res.data.success) {
+        setPhotoPreview(res.data.photo);
+
+        // ⭐ INSTANT SESSION UPDATE
+        const updatedUser = {
+          ...user,
+          photo: res.data.photo,
+        };
+
+        sessionStorage.setItem("gc_user", JSON.stringify(updatedUser));
+        setUser(updatedUser);
+      }
     } catch {
       alert("Upload failed");
     }
@@ -105,7 +130,7 @@ export default function EditProfile() {
       >
         <h2 style={{ fontSize: 26, marginBottom: 30 }}>Edit Profile</h2>
 
-        {/* ---------- PROFILE PICTURE ---------- */}
+        {/* PROFILE PIC */}
         <div style={{ marginBottom: 30 }}>
           <label style={label}>Profile Picture</label>
 
@@ -151,7 +176,7 @@ export default function EditProfile() {
           </div>
         </div>
 
-        {/* ---------- BIO ---------- */}
+        {/* BIO */}
         <div style={{ marginBottom: 22 }}>
           <label style={label}>Bio</label>
           <textarea
@@ -165,7 +190,7 @@ export default function EditProfile() {
           />
         </div>
 
-        {/* ---------- SKILLS ---------- */}
+        {/* SKILLS */}
         <div style={{ marginBottom: 22 }}>
           <label style={label}>Skills (comma separated)</label>
           <input
@@ -175,54 +200,51 @@ export default function EditProfile() {
           />
         </div>
 
-        {/* ---------- SOCIAL LINKS ---------- */}
-        <div style={{ marginBottom: 22 }}>
-          <label style={label}>GitHub</label>
-          <input
-            value={social.github}
-            onChange={(e) => setSocial({ ...social, github: e.target.value })}
-            style={input}
-          />
-        </div>
+        {/* SOCIAL */}
+        <SocialField
+          label="GitHub"
+          value={social.github}
+          onChange={(v) => setSocial({ ...social, github: v })}
+        />
 
-        <div style={{ marginBottom: 22 }}>
-          <label style={label}>LinkedIn</label>
-          <input
-            value={social.linkedin}
-            onChange={(e) => setSocial({ ...social, linkedin: e.target.value })}
-            style={input}
-          />
-        </div>
+        <SocialField
+          label="LinkedIn"
+          value={social.linkedin}
+          onChange={(v) => setSocial({ ...social, linkedin: v })}
+        />
 
-        <div style={{ marginBottom: 22 }}>
-          <label style={label}>Instagram</label>
-          <input
-            value={social.instagram}
-            onChange={(e) => setSocial({ ...social, instagram: e.target.value })}
-            style={input}
-          />
-        </div>
+        <SocialField
+          label="Instagram"
+          value={social.instagram}
+          onChange={(v) => setSocial({ ...social, instagram: v })}
+        />
 
-        <div style={{ marginBottom: 22 }}>
-          <label style={label}>Website</label>
-          <input
-            value={social.website}
-            onChange={(e) => setSocial({ ...social, website: e.target.value })}
-            style={input}
-          />
-        </div>
+        <SocialField
+          label="Website"
+          value={social.website}
+          onChange={(v) => setSocial({ ...social, website: v })}
+        />
 
-        {/* SAVE BUTTON */}
         <button
           onClick={saveChanges}
           style={{
             ...saveBtn,
-            width: isMobile ? "100%" : "100%",
+            width: "100%",
           }}
         >
           Save Changes
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ---------- SOCIAL REUSABLE ---------- */
+function SocialField({ label: lbl, value, onChange }) {
+  return (
+    <div style={{ marginBottom: 22 }}>
+      <label style={label}>{lbl}</label>
+      <input value={value} onChange={(e) => onChange(e.target.value)} style={input} />
     </div>
   );
 }

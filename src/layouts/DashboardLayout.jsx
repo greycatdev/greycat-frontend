@@ -14,8 +14,8 @@ export default function DashboardLayout({ children }) {
   const [authLoading, setAuthLoading] = useState(!cachedUser);
 
   /* ============================================
-     2️⃣ LISTEN FOR PROFILE CHANGE FROM SETTINGS
-     (name, username, photo instantly update)
+     2️⃣ LISTEN FOR PROFILE UPDATES (EditProfile / Settings)
+     (Photo, name, username update instantly)
   ============================================ */
   useEffect(() => {
     const sync = () => {
@@ -28,7 +28,7 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   /* ============================================
-     3️⃣ SIDEBAR & SEARCH STATES
+     3️⃣ SIDEBAR + SEARCH UI STATES
   ============================================ */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -40,7 +40,7 @@ export default function DashboardLayout({ children }) {
   const searchTimeout = useRef(null);
 
   /* ============================================
-     4️⃣ VERIFY AUTH ONLY IF NOT CACHED
+     4️⃣ AUTH CHECK (only when no cache)
   ============================================ */
   useEffect(() => {
     if (cachedUser) {
@@ -97,7 +97,7 @@ export default function DashboardLayout({ children }) {
   };
 
   /* ============================================
-     6️⃣ CLOSE SEARCH + SIDEBAR WHEN CLICK OUTSIDE
+     6️⃣ CLICK OUTSIDE (close dropdown)
   ============================================ */
   useEffect(() => {
     const handler = (e) => {
@@ -123,8 +123,8 @@ export default function DashboardLayout({ children }) {
   useEffect(() => {
     const handler = (e) => {
       if (e.key === "Escape") {
-        setIsSidebarOpen(false);
         setVisible(false);
+        setIsSidebarOpen(false);
       }
     };
 
@@ -133,17 +133,17 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   /* ============================================
-     8️⃣ AUTH LOADER
+     8️⃣ AUTH LOADING VIEW
   ============================================ */
   if (authLoading) {
     return (
       <div
         style={{
           padding: 40,
+          minHeight: "100vh",
           background: "#0d1117",
           color: "#c9d1d9",
           fontFamily: "Poppins",
-          minHeight: "100vh",
         }}
       >
         Checking authentication…
@@ -162,7 +162,7 @@ export default function DashboardLayout({ children }) {
   };
 
   /* ============================================
-     🔟 FULL UI LAYOUT
+     🔟 LAYOUT START
   ============================================ */
   return (
     <>
@@ -186,19 +186,20 @@ export default function DashboardLayout({ children }) {
             gap: 4,
           }}
         >
-          {/* MOBILE HEADER */}
+          {/* MOBILE SIDEBAR HEADER */}
           <div className="gc-mobile-sidebar-header">
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
               <span className="gc-brand-text">Greycat</span>
             </div>
+
             <button
               className="gc-close-mobile"
               onClick={() => setIsSidebarOpen(false)}
               style={{
                 marginLeft: "auto",
-                background: "none",
                 border: "none",
+                background: "none",
                 color: "#c9d1d9",
                 fontSize: 24,
               }}
@@ -234,6 +235,7 @@ export default function DashboardLayout({ children }) {
             }}
           />
 
+          {/* SIDEBAR ITEMS */}
           <SidebarItem label="Home" to="/" icon="home.svg" />
           <SidebarItem label="Explore" to="/explore" icon="explore.svg" />
           <SidebarItem label="Events" to="/events" icon="calendar.svg" />
@@ -247,6 +249,7 @@ export default function DashboardLayout({ children }) {
 
           <div style={{ flexGrow: 1 }} />
 
+          {/* LOGOUT BTN */}
           <button
             onClick={handleLogout}
             style={{
@@ -271,9 +274,9 @@ export default function DashboardLayout({ children }) {
           </button>
         </aside>
 
-        {/* MAIN AREA */}
+        {/* MAIN SECTION */}
         <div className="gc-main">
-          {/* MOBILE BRAND */}
+          {/* MOBILE TOP BRAND */}
           <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -281,9 +284,8 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
-          {/* TOPBAR */}
+          {/* TOP BAR */}
           <div className="gc-topbar">
-            {/* MOBILE ICON */}
             <div
               className="gc-mobile-toggle"
               onClick={() => setIsSidebarOpen(true)}
@@ -293,7 +295,7 @@ export default function DashboardLayout({ children }) {
               </svg>
             </div>
 
-            {/* SEARCH */}
+            {/* SEARCH BOX */}
             <div
               style={{ position: "relative", flex: 1, margin: "0 10px" }}
               ref={searchRef}
@@ -329,8 +331,7 @@ export default function DashboardLayout({ children }) {
                     zIndex: 100,
                   }}
                 >
-                  {results.users.length === 0 &&
-                  results.events.length === 0 ? (
+                  {results.users.length === 0 && results.events.length === 0 ? (
                     <p
                       style={{
                         padding: 10,
@@ -354,7 +355,6 @@ export default function DashboardLayout({ children }) {
                           >
                             Users
                           </p>
-
                           {results.users.map((u) => (
                             <SearchItem
                               key={u._id}
@@ -364,7 +364,7 @@ export default function DashboardLayout({ children }) {
                               }}
                             >
                               <img
-                                src={u.photo}
+                                src={`${u.photo}?v=${u.updatedAt || Date.now()}`}
                                 style={{
                                   width: 24,
                                   height: 24,
@@ -390,7 +390,6 @@ export default function DashboardLayout({ children }) {
                           >
                             Events
                           </p>
-
                           {results.events.map((ev) => (
                             <SearchItem
                               key={ev._id}
@@ -410,9 +409,9 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* USER AVATAR */}
+            {/* AVATAR — FIXED WITH ?v= */}
             <img
-              src={user.photo}
+              src={`${user.photo}?v=${user.updatedAt || Date.now()}`}
               onClick={() => navigate(`/${user.username}`)}
               style={{
                 width: 32,
