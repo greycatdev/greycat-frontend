@@ -63,8 +63,7 @@ html, body {
   height: 100%;
   width: 100%;
 }
-
-.loader-container {
+.loader-page {
   height: 100vh;
   width: 100%;
   background: black;
@@ -73,36 +72,54 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  font-family: Poppins, sans-serif;
+  text-align: center;
+}
+
+/* LOADING . */
+.loader-text-main {
+  font-size: 20px;
+  margin-bottom: 14px;
+  letter-spacing: 2px;
+}
+
+/* Progress bar wrapper */
+.loader-bar {
+  width: 60%;
+  height: 4px;
+  background: #222;
+  border-radius: 4px;
   overflow: hidden;
+  margin-bottom: 12px;
 }
 
-.car {
-  font-size: 48px;
-  animation: drive 2s linear infinite;
+/* Blue bar */
+.loader-bar-fill {
+  height: 100%;
+  background: #00aaff;
+  transition: width 0.3s linear;
 }
 
-@keyframes drive {
-  0% {
-    transform: translateX(-200px);
-  }
-  100% {
-    transform: translateX(200px);
-  }
-}
-
-.loader-text {
-  margin-top: 20px;
+/* Percentage */
+.loader-percent {
   font-size: 18px;
-  color: #bbb;
-  letter-spacing: 1px;
-  text-transform: capitalize;
-  animation: fade 1s ease-in-out infinite;
+  color: #ccc;
+  margin-bottom: 20px;
 }
 
-@keyframes fade {
-  0% { opacity: 0.3; }
+/* Changing text */
+.loader-message {
+  font-size: 16px;
+  color: #bbb;
+  margin-top: 10px;
+  text-transform: capitalize;
+  animation: fadeMsg 1.4s ease-in-out infinite;
+}
+
+@keyframes fadeMsg {
+  0% { opacity: 0.4; }
   50% { opacity: 1; }
-  100% { opacity: 0.3; }
+  100% { opacity: 0.4; }
 }
 
 
