@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 const DEFAULT_PHOTO =
-  "https://raw.githubusercontent.com/shahal-kp/greycat-assets/main/default-profile.jpg";
+  "https://greycat-backend.onrender.com/default-profile.jpg";
+
 
 export default function Login() {
   const navigate = useNavigate();
