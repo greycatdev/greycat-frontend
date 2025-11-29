@@ -15,18 +15,17 @@ export default function Login() {
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   /* -----------------------------------------
-     CLEAR STALE QUERY PARAMS
+     CLEAR QUERY PARAMS
   ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-
     if (params.get("logout") || params.get("error")) {
       window.history.replaceState({}, "", "/login");
     }
   }, [location.search]);
 
   /* -----------------------------------------
-     VERIFY IF USER IS ALREADY LOGGED IN
+     CHECK IF USER ALREADY LOGGED IN
   ----------------------------------------- */
   useEffect(() => {
     async function checkAuth() {
@@ -38,7 +37,11 @@ export default function Login() {
         const data = await res.json();
 
         if (data?.authenticated) {
-          navigate("/");
+          if (!data.user.username) {
+            navigate("/set-username");
+          } else {
+            navigate("/");
+          }
           return;
         }
       } catch (err) {
@@ -52,7 +55,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     LOADER WHILE CHECKING SESSION
+     SHOW LOADING SCREEN
   ----------------------------------------- */
   if (checkingAuth) {
     return (
@@ -74,7 +77,7 @@ export default function Login() {
   }
 
   /* -----------------------------------------
-     EMAIL + PASSWORD LOGIN HANDLER
+     HANDLE EMAIL LOGIN
   ----------------------------------------- */
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -96,7 +99,12 @@ export default function Login() {
       const data = await res.json();
 
       if (data?.success) {
-        navigate("/");
+        // ⭐ REDIRECT BASED ON USERNAME STATUS
+        if (!data.user.username) {
+          navigate("/set-username");
+        } else {
+          navigate("/");
+        }
         return;
       } else {
         setError(data?.message || "Login failed");
@@ -109,7 +117,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     THEME SETUP
+     THEME
   ----------------------------------------- */
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -160,7 +168,7 @@ export default function Login() {
           Sign in to GreyCat
         </h1>
 
-        {/* ERROR MESSAGE */}
+        {/* ERROR */}
         {error && (
           <div
             style={{
@@ -214,7 +222,7 @@ export default function Login() {
           }}
         />
 
-        {/* FORGOT PASSWORD LINK */}
+        {/* FORGOT PASSWORD */}
         <div
           style={{
             width: "100%",
@@ -273,8 +281,12 @@ export default function Login() {
             cursor: "pointer",
             transition: "0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = theme.googleHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.background = theme.cardBg)}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = theme.googleHover)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = theme.cardBg)
+          }
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
@@ -284,7 +296,7 @@ export default function Login() {
           Continue with Google
         </button>
 
-        {/* GitHub Button */}
+        {/* Github */}
         <button
           onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
           style={{

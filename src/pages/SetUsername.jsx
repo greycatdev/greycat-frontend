@@ -14,7 +14,7 @@ export default function SetUsername() {
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   /* ---------------------------
-      CLEAR QUERY PARAMETERS
+      CLEAR QUERY PARAMS
   ---------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -24,41 +24,59 @@ export default function SetUsername() {
   }, [location.search]);
 
   /* ---------------------------
-      AUTH CHECK + FETCH USER
+      AUTH CHECK + LOAD USER
   ---------------------------- */
   useEffect(() => {
-    fetch(`${BACKEND_URL}/auth/user`, {
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    async function check() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/auth/user`, {
+          credentials: "include",
+        });
+
+        const data = await res.json();
+
         if (!data.authenticated) return navigate("/login");
 
-        setUserId(data.user._id);
+        // ⭐ FIX: use user.id (email/password login) OR user._id (OAuth)
+        const id = data.user.id || data.user._id;
 
+        if (!id) return; // don't kick user out immediately
+
+
+        setUserId(id);
+
+        // If username already exists, skip this page
         if (data.user.username) {
           navigate("/");
+          return;
         }
-      })
-      .catch(() => navigate("/login"));
+      } catch (err) {
+        navigate("/login");
+      }
+    }
+
+    check();
   }, []);
 
   /* ---------------------------
-      VALIDATION RULE
+      USERNAME FORMAT VALIDATOR
   ---------------------------- */
   const validateFormat = (name) => /^[a-zA-Z0-9._]+$/.test(name);
 
   /* ---------------------------
-      CHECK USERNAME AVAILABILITY
+      CHECK AVAILABILITY
   ---------------------------- */
   const checkUsername = async () => {
     const trimmed = username.trim().toLowerCase();
 
-    if (!trimmed) return alert("Username cannot be empty.");
+    if (!trimmed) {
+      alert("Username cannot be empty.");
+      return;
+    }
 
     if (!validateFormat(trimmed)) {
       alert(
-        "Usernames can contain letters, numbers, dot (.) and underscore (_) only."
+        "Invalid format. Only letters, numbers, dot (.) and underscore (_) allowed."
       );
       return;
     }
@@ -96,7 +114,7 @@ export default function SetUsername() {
     const data = await res.json();
 
     if (data.success) navigate("/");
-    else alert(data.message || "Error saving username");
+    else alert(data.message || "Could not save username");
   };
 
   /* ---------------------------
@@ -194,12 +212,12 @@ export default function SetUsername() {
           }}
         />
 
-        {/* CHECKING INDICATOR */}
+        {/* CHECKING */}
         {checking && (
           <p style={{ color: "#8b949e", marginTop: 8 }}>Checking...</p>
         )}
 
-        {/* SUCCESS */}
+        {/* AVAILABLE */}
         {available === true && (
           <p
             style={{
@@ -215,7 +233,7 @@ export default function SetUsername() {
           </p>
         )}
 
-        {/* ERROR */}
+        {/* TAKEN */}
         {available === false && (
           <p
             style={{
@@ -244,7 +262,6 @@ export default function SetUsername() {
             color: "#c9d1d9",
             fontSize: 15,
             cursor: "pointer",
-            transition: "0.2s",
           }}
         >
           Check availability
@@ -266,7 +283,6 @@ export default function SetUsername() {
             cursor: available ? "pointer" : "not-allowed",
             fontSize: 15,
             fontWeight: 500,
-            transition: "0.2s",
           }}
         >
           Save username

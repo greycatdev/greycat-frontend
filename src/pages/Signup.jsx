@@ -12,6 +12,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false); // ⭐ SUCCESS POPUP
 
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -34,7 +35,12 @@ export default function Signup() {
     }
 
     if (!email.includes("@") || !email.includes(".")) {
-      setError("Please enter a valid email.");
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
       return;
     }
 
@@ -56,237 +62,289 @@ export default function Signup() {
       const data = await res.json();
 
       if (data?.success) {
-        navigate("/login");
+        setSuccess(true); // ⭐ Show popup
+
+        // Auto redirect after 2 seconds
+        setTimeout(() => navigate("/login"), 2000);
       } else {
         setError(data?.message || "Signup failed");
       }
     } catch (err) {
-      setError("Something went wrong.");
+      setError("Network error, try again.");
     }
 
     setLoading(false);
   }
 
   return (
-    <div
-      style={{
-        height: "100vh",
-        width: "100vw",
-        background: theme.bg,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-        fontFamily: "Poppins",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 380,
-          padding: "32px 28px",
-          borderRadius: 10,
-          background: theme.cardBg,
-          border: `1px solid ${theme.border}`,
-          textAlign: "center",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "20px",
-            marginBottom: 24,
-            fontWeight: 600,
-            color: theme.text,
-          }}
-        >
-          Create your GreyCat account
-        </h2>
-
-        {/* ERROR MESSAGE */}
-        {error && (
-          <div
-            style={{
-              marginBottom: 15,
-              padding: "10px",
-              borderRadius: 6,
-              background: "#ffebe9",
-              color: "#cf222e",
-              fontSize: 14,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        {/* FULL NAME */}
-        <input
-          placeholder="Full Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: 6,
-            border: `1px solid ${theme.border}`,
-            background: theme.inputBg,
-            color: theme.text,
-            marginBottom: 12,
-          }}
-        />
-
-        {/* EMAIL */}
-        <input
-          type="email"
-          placeholder="Email Address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: 6,
-            border: `1px solid ${theme.border}`,
-            background: theme.inputBg,
-            color: theme.text,
-            marginBottom: 12,
-          }}
-        />
-
-        {/* PASSWORD */}
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: 6,
-            border: `1px solid ${theme.border}`,
-            background: theme.inputBg,
-            color: theme.text,
-            marginBottom: 16,
-          }}
-        />
-
-        {/* SIGNUP BUTTON */}
-        <button
-          onClick={handleSignup}
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "12px",
-            borderRadius: 6,
-            background: "#238636",
-            color: "#ffffff",
-            cursor: "pointer",
-            fontSize: 15,
-            marginBottom: 16,
-            opacity: loading ? 0.7 : 1,
-          }}
-        >
-          {loading ? "Creating..." : "Sign Up"}
-        </button>
-
-        {/* OR */}
+    <>
+      {/* ---------------------------------------------------
+          SUCCESS POPUP OVERLAY
+      --------------------------------------------------- */}
+      {success && (
         <div
           style={{
-            color: theme.text,
-            fontSize: 13,
-            margin: "10px 0",
-            opacity: 0.7,
-          }}
-        >
-          OR
-        </div>
-
-        {/* GOOGLE BUTTON */}
-        <button
-          onClick={() => (window.location.href = `${BACKEND_URL}/auth/google`)}
-          style={{
-            width: "100%",
-            padding: "14px",
-            marginBottom: "12px",
+            position: "fixed",
+            top: 0,
+            left: 0,
+            height: "100vh",
+            width: "100vw",
+            background: "rgba(0,0,0,0.6)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            gap: "10px",
-            borderRadius: 6,
-            background: theme.cardBg,
-            border: `1px solid ${theme.border}`,
-            color: theme.text,
-            fontSize: 15,
-            cursor: "pointer",
-            transition: "0.15s",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = theme.googleHover)
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = theme.cardBg)
-          }
-        >
-          <img
-            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
-            width="20"
-            style={{ filter: isDark ? "invert(1)" : "none" }}
-          />
-          Continue with Google
-        </button>
-
-        {/* GITHUB BUTTON */}
-        <button
-          onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
-          style={{
-            width: "100%",
-            padding: "14px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: "10px",
-            borderRadius: 6,
-            background: "#24292f",
-            border: "1px solid #1b1f24",
-            color: "#ffffff",
-            fontSize: 15,
-            cursor: "pointer",
-            transition: "0.15s",
-          }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background = "#1f2328")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background = "#24292f")
-          }
-        >
-          <img
-            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
-            width="20"
-            style={{ filter: "invert(1)" }}
-          />
-          Continue with GitHub
-        </button>
-
-        {/* LOGIN LINK */}
-        <p
-          style={{
-            marginTop: 18,
-            fontSize: 14,
-            color: theme.text,
+            zIndex: 9999,
           }}
         >
-          Already have an account?{" "}
-          <span
-            onClick={() => navigate("/login")}
+          <div
             style={{
-              color: "#2f81f7",
-              cursor: "pointer",
-              fontWeight: 500,
+              background: theme.cardBg,
+              padding: "30px 25px",
+              borderRadius: 10,
+              border: `1px solid ${theme.border}`,
+              width: "90%",
+              maxWidth: 350,
+              textAlign: "center",
+              animation: "fadeIn 0.3s ease",
             }}
           >
-            Login
-          </span>
-        </p>
+            <h3 style={{ color: theme.text, marginBottom: 10 }}>
+              🎉 Account Created!
+            </h3>
+            <p style={{ color: theme.text, opacity: 0.8, fontSize: 14 }}>
+              Redirecting to login…
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------
+          SIGNUP PAGE
+      --------------------------------------------------- */}
+      <div
+        style={{
+          height: "100vh",
+          width: "100vw",
+          background: theme.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          fontFamily: "Poppins",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 380,
+            padding: "32px 28px",
+            borderRadius: 10,
+            background: theme.cardBg,
+            border: `1px solid ${theme.border}`,
+            textAlign: "center",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "20px",
+              marginBottom: 24,
+              fontWeight: 600,
+              color: theme.text,
+            }}
+          >
+            Create your GreyCat account
+          </h2>
+
+          {/* ERROR MESSAGE */}
+          {error && (
+            <div
+              style={{
+                marginBottom: 15,
+                padding: "10px",
+                borderRadius: 6,
+                background: "#ffebe9",
+                color: "#cf222e",
+                fontSize: 14,
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* NAME */}
+          <input
+            placeholder="Full Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.inputBg,
+              color: theme.text,
+              marginBottom: 12,
+            }}
+          />
+
+          {/* EMAIL */}
+          <input
+            type="email"
+            placeholder="Email Address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.inputBg,
+              color: theme.text,
+              marginBottom: 12,
+            }}
+          />
+
+          {/* PASSWORD */}
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.inputBg,
+              color: theme.text,
+              marginBottom: 16,
+            }}
+          />
+
+          {/* SIGNUP BUTTON */}
+          <button
+            onClick={handleSignup}
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "12px",
+              borderRadius: 6,
+              background: "#238636",
+              color: "#ffffff",
+              cursor: "pointer",
+              fontSize: 15,
+              marginBottom: 16,
+              opacity: loading ? 0.7 : 1,
+            }}
+          >
+            {loading ? "Creating…" : "Sign Up"}
+          </button>
+
+          {/* OR */}
+          <div
+            style={{
+              color: theme.text,
+              fontSize: 13,
+              margin: "10px 0",
+              opacity: 0.7,
+            }}
+          >
+            OR
+          </div>
+
+          {/* GOOGLE */}
+          <button
+            onClick={() =>
+              (window.location.href = `${BACKEND_URL}/auth/google`)
+            }
+            style={{
+              width: "100%",
+              padding: "14px",
+              marginBottom: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              borderRadius: 6,
+              background: theme.cardBg,
+              border: `1px solid ${theme.border}`,
+              color: theme.text,
+              fontSize: 15,
+              cursor: "pointer",
+              transition: "0.15s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = theme.googleHover)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = theme.cardBg)
+            }
+          >
+            <img
+              src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+              width="20"
+              style={{ filter: isDark ? "invert(1)" : "none" }}
+            />
+            Continue with Google
+          </button>
+
+          {/* GITHUB */}
+          <button
+            onClick={() =>
+              (window.location.href = `${BACKEND_URL}/auth/github`)
+            }
+            style={{
+              width: "100%",
+              padding: "14px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "10px",
+              borderRadius: 6,
+              background: "#24292f",
+              border: "1px solid #1b1f24",
+              color: "#ffffff",
+              fontSize: 15,
+              cursor: "pointer",
+              transition: "0.15s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = "#1f2328")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "#24292f")
+            }
+          >
+            <img
+              src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
+              width="20"
+              style={{ filter: "invert(1)" }}
+            />
+            Continue with GitHub
+          </button>
+
+          {/* LOGIN LINK */}
+          <p
+            style={{
+              marginTop: 18,
+              fontSize: 14,
+              color: theme.text,
+            }}
+          >
+            Already have an account?{" "}
+            <span
+              onClick={() => navigate("/login")}
+              style={{
+                color: "#2f81f7",
+                cursor: "pointer",
+                fontWeight: 500,
+              }}
+            >
+              Login
+            </span>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
