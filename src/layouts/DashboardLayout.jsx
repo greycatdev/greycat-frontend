@@ -7,7 +7,7 @@ export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
   // ⭐ NEW DEFAULT AVATAR
-  const DEFAULT_AVATAR = "/default-image.jpg";
+  const DEFAULT_AVATAR = "https://greycat-backend.onrender.com/default-profile.jpg";
 
   /* ============================================
      1️⃣ USER STATE + SESSION CACHE

@@ -380,8 +380,11 @@ export default function EventPage() {
                   cursor: "pointer",
                 }}
               >
+
+          
+
                 <img
-                  src={event.host.photo || "/default-avatar.png"}
+                  src={event.host.photo || "https://greycat-backend.onrender.com/default-profile.jpg"}
                   alt={event.host.username}
                   style={{
                     width: 42,
@@ -574,7 +577,7 @@ export default function EventPage() {
                     title={`@${a.username}`}
                   >
                     <img
-                      src={a.photo || "/default-avatar.png"}
+                      src={a.photo || "https://greycat-backend.onrender.com/default-profile.jpg"}
                       alt={a.username}
                       style={{
                         width: "100%",
@@ -650,7 +653,7 @@ export default function EventPage() {
                     }}
                   >
                     <img
-                      src={c.user?.photo || "/default-avatar.png"}
+                      src={c.user?.photo || "https://greycat-backend.onrender.com/default-profile.jpg"}
                       alt={c.user?.username}
                       style={{
                         width: 32,
