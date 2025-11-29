@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
+const DEFAULT_PHOTO =
+  "https://raw.githubusercontent.com/shahal-kp/greycat-assets/main/default-profile.jpg";
+
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,7 +18,7 @@ export default function Login() {
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   /* -----------------------------------------
-     CLEAR QUERY PARAMS
+     CLEAR QUERY PARAMS (?logout=success)
   ----------------------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -25,7 +28,7 @@ export default function Login() {
   }, [location.search]);
 
   /* -----------------------------------------
-     CHECK IF USER ALREADY LOGGED IN
+     CHECK SESSION → If user already logged in
   ----------------------------------------- */
   useEffect(() => {
     async function checkAuth() {
@@ -39,7 +42,9 @@ export default function Login() {
         if (data?.authenticated) {
           const user = data.user;
 
-          // FIX: Always _id, not id
+          // Ensure default photo
+          if (!user.photo) user.photo = DEFAULT_PHOTO;
+
           if (!user.username) {
             return navigate("/set-username");
           }
@@ -57,7 +62,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     SHOW LOADING SCREEN WHILE CHECKING SESSION
+     SHOW LOADING SCREEN
   ----------------------------------------- */
   if (checkingAuth) {
     return (
@@ -103,7 +108,9 @@ export default function Login() {
       if (data?.success) {
         const user = data.user;
 
-        // FIXED — ALWAYS use _id
+        // Apply default fox pic if backend returned empty
+        if (!user.photo) user.photo = DEFAULT_PHOTO;
+
         if (!user.username) {
           return navigate("/set-username");
         } else {
@@ -133,9 +140,6 @@ export default function Login() {
     inputBg: isDark ? "#0d1117" : "#f0f2f4",
   };
 
-  /* -----------------------------------------
-     UI
-  ----------------------------------------- */
   return (
     <div
       style={{
@@ -267,7 +271,9 @@ export default function Login() {
 
         {/* GOOGLE LOGIN */}
         <button
-          onClick={() => (window.location.href = `${BACKEND_URL}/auth/google`)}
+          onClick={() =>
+            (window.location.href = `${BACKEND_URL}/auth/google`)
+          }
           style={{
             width: "100%",
             padding: "14px",
@@ -301,7 +307,9 @@ export default function Login() {
 
         {/* GITHUB LOGIN */}
         <button
-          onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
+          onClick={() =>
+            (window.location.href = `${BACKEND_URL}/auth/github`)
+          }
           style={{
             width: "100%",
             padding: "14px",
@@ -317,8 +325,12 @@ export default function Login() {
             cursor: "pointer",
             transition: "0.15s",
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#1f2328")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#24292f")}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "#1f2328")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "#24292f")
+          }
         >
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"

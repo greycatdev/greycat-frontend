@@ -6,6 +6,9 @@ import { Link, useNavigate } from "react-router-dom";
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
+  const DEFAULT_FOX =
+    "https://i.postimg.cc/SKwj9SjK/greycat-avatar.jpg"; // your fox avatar
+
   /* ============================================
      1️⃣ USER STATE + SESSION CACHE
   ============================================ */
@@ -14,15 +17,13 @@ export default function DashboardLayout({ children }) {
   const [authLoading, setAuthLoading] = useState(!cachedUser);
 
   /* ============================================
-     2️⃣ LISTEN FOR PROFILE UPDATES (EditProfile / Settings)
-     (Photo, name, username update instantly)
+     2️⃣ LISTEN FOR PROFILE UPDATES (global sync)
   ============================================ */
   useEffect(() => {
     const sync = () => {
       const updated = sessionStorage.getItem("gc_user");
       if (updated) setUser(JSON.parse(updated));
     };
-
     window.addEventListener("gc_user_updated", sync);
     return () => window.removeEventListener("gc_user_updated", sync);
   }, []);
@@ -40,7 +41,7 @@ export default function DashboardLayout({ children }) {
   const searchTimeout = useRef(null);
 
   /* ============================================
-     4️⃣ AUTH CHECK (only when no cache)
+     4️⃣ AUTH CHECK
   ============================================ */
   useEffect(() => {
     if (cachedUser) {
@@ -57,14 +58,17 @@ export default function DashboardLayout({ children }) {
         if (!mounted) return;
 
         if (res.data.authenticated) {
-          setUser(res.data.user);
-          sessionStorage.setItem("gc_user", JSON.stringify(res.data.user));
+          let u = res.data.user;
+          u.photo = u.photo || DEFAULT_FOX;
+
+          setUser(u);
+          sessionStorage.setItem("gc_user", JSON.stringify(u));
         } else {
           sessionStorage.removeItem("gc_user");
           navigate("/login");
           return;
         }
-      } catch (err) {
+      } catch {
         sessionStorage.removeItem("gc_user");
         navigate("/login");
         return;
@@ -90,14 +94,22 @@ export default function DashboardLayout({ children }) {
 
     searchTimeout.current = setTimeout(() => {
       API.get(`/search?q=${value}`).then((res) => {
-        setResults(res.data);
+        const updated = {
+          ...res.data,
+          users: res.data.users.map((u) => ({
+            ...u,
+            photo: u.photo || DEFAULT_FOX,
+          })),
+        };
+
+        setResults(updated);
         setVisible(true);
       });
     }, 250);
   };
 
   /* ============================================
-     6️⃣ CLICK OUTSIDE (close dropdown)
+     6️⃣ CLICK OUTSIDE
   ============================================ */
   useEffect(() => {
     const handler = (e) => {
@@ -118,7 +130,7 @@ export default function DashboardLayout({ children }) {
   }, [isSidebarOpen]);
 
   /* ============================================
-     7️⃣ ESCAPE KEY CLOSE
+     7️⃣ ESC CLOSE
   ============================================ */
   useEffect(() => {
     const handler = (e) => {
@@ -133,7 +145,7 @@ export default function DashboardLayout({ children }) {
   }, []);
 
   /* ============================================
-     8️⃣ AUTH LOADING VIEW
+     8️⃣ AUTH LOADING SCREEN
   ============================================ */
   if (authLoading) {
     return (
@@ -153,6 +165,9 @@ export default function DashboardLayout({ children }) {
 
   if (!user) return null;
 
+  // Safety fallback
+  if (!user.photo) user.photo = DEFAULT_FOX;
+
   /* ============================================
      9️⃣ LOGOUT
   ============================================ */
@@ -166,12 +181,7 @@ export default function DashboardLayout({ children }) {
   ============================================ */
   return (
     <>
-      {isSidebarOpen && (
-        <div
-          className="gc-sidebar-backdrop"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+      {isSidebarOpen && <div className="gc-sidebar-backdrop" />}
 
       <div className="gc-layout">
         {/* SIDEBAR */}
@@ -183,7 +193,6 @@ export default function DashboardLayout({ children }) {
             padding: 18,
             display: "flex",
             flexDirection: "column",
-            gap: 4,
           }}
         >
           {/* MOBILE SIDEBAR HEADER */}
@@ -198,13 +207,13 @@ export default function DashboardLayout({ children }) {
               onClick={() => setIsSidebarOpen(false)}
               style={{
                 marginLeft: "auto",
-                border: "none",
                 background: "none",
+                border: "none",
                 color: "#c9d1d9",
                 fontSize: 24,
               }}
             >
-              &times;
+              ×
             </button>
           </div>
 
@@ -235,7 +244,7 @@ export default function DashboardLayout({ children }) {
             }}
           />
 
-          {/* SIDEBAR ITEMS */}
+          {/* NAV LINKS */}
           <SidebarItem label="Home" to="/" icon="home.svg" />
           <SidebarItem label="Explore" to="/explore" icon="explore.svg" />
           <SidebarItem label="Events" to="/events" icon="calendar.svg" />
@@ -249,7 +258,7 @@ export default function DashboardLayout({ children }) {
 
           <div style={{ flexGrow: 1 }} />
 
-          {/* LOGOUT BTN */}
+          {/* LOGOUT */}
           <button
             onClick={handleLogout}
             style={{
@@ -276,7 +285,7 @@ export default function DashboardLayout({ children }) {
 
         {/* MAIN SECTION */}
         <div className="gc-main">
-          {/* MOBILE TOP BRAND */}
+          {/* TOP BRAND MOBILE */}
           <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -295,7 +304,7 @@ export default function DashboardLayout({ children }) {
               </svg>
             </div>
 
-            {/* SEARCH BOX */}
+            {/* SEARCH BAR */}
             <div
               style={{ position: "relative", flex: 1, margin: "0 10px" }}
               ref={searchRef}
@@ -331,7 +340,8 @@ export default function DashboardLayout({ children }) {
                     zIndex: 100,
                   }}
                 >
-                  {results.users.length === 0 && results.events.length === 0 ? (
+                  {results.users.length === 0 &&
+                  results.events.length === 0 ? (
                     <p
                       style={{
                         padding: 10,
@@ -355,6 +365,7 @@ export default function DashboardLayout({ children }) {
                           >
                             Users
                           </p>
+
                           {results.users.map((u) => (
                             <SearchItem
                               key={u._id}
@@ -364,7 +375,8 @@ export default function DashboardLayout({ children }) {
                               }}
                             >
                               <img
-                                src={`${u.photo}?v=${u.updatedAt || Date.now()}`}
+                                src={u.photo || DEFAULT_FOX}
+                                onError={(e) => (e.target.src = DEFAULT_FOX)}
                                 style={{
                                   width: 24,
                                   height: 24,
@@ -390,6 +402,7 @@ export default function DashboardLayout({ children }) {
                           >
                             Events
                           </p>
+
                           {results.events.map((ev) => (
                             <SearchItem
                               key={ev._id}
@@ -409,9 +422,10 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* AVATAR — FIXED WITH ?v= */}
+            {/* TOPBAR AVATAR — FIXED */}
             <img
-              src={`${user.photo}?v=${user.updatedAt || Date.now()}`}
+              src={user.photo || DEFAULT_FOX}
+              onError={(e) => (e.target.src = DEFAULT_FOX)}
               onClick={() => navigate(`/${user.username}`)}
               style={{
                 width: 32,

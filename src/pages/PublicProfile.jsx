@@ -22,6 +22,9 @@ export default function PublicProfile() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
+  const DEFAULT_FOX =
+    "https://i.postimg.cc/SKwj9SjK/greycat-avatar.jpg"; // your fox image
+
   /* ----------------- Screen Resize Listener ----------------- */
   useEffect(() => {
     const resizeHandler = () => setIsMobile(window.innerWidth <= 768);
@@ -49,7 +52,9 @@ export default function PublicProfile() {
           return;
         }
 
-        setProfileUser(res.data.user);
+        const user = res.data.user;
+        user.photo = user.photo || DEFAULT_FOX;
+        setProfileUser(user);
 
         API.get(`/follow/status/${username}`).then((r) =>
           setIsFollowing(r.data.success ? r.data.following : false)
@@ -141,8 +146,9 @@ export default function PublicProfile() {
         >
           {/* Avatar */}
           <img
-            src={profileUser.photo}
+            src={profileUser.photo || DEFAULT_FOX}
             alt={profileUser.name}
+            onError={(e) => (e.target.src = DEFAULT_FOX)}
             style={{
               width: isMobile ? 90 : 140,
               height: isMobile ? 90 : 140,
@@ -282,7 +288,6 @@ export default function PublicProfile() {
                         {Array.isArray(proj.tech) ? proj.tech.join(", ") : proj.tech}
                       </p>
 
-                      {/* SAFETY: user may be missing */}
                       {proj.user && (
                         <p style={{ color: "#8b949e", fontSize: 12 }}>
                           @{proj.user.username}
@@ -320,12 +325,14 @@ export default function PublicProfile() {
                       height: isMobile ? 150 : 240,
                     }}
                     onClick={() => navigate(`/post/${post._id}`)}
+                    onError={(e) => (e.target.style.display = "none")}
                   />
                 ) : null
               )}
             </div>
           )}
         </div>
+
       </div>
     </DashboardLayout>
   );

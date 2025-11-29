@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
 
+const DEFAULT_PHOTO =
+  "https://raw.githubusercontent.com/shahal-kp/greycat-assets/main/default-profile.jpg";
+
 export default function EditProfile() {
   const navigate = useNavigate();
 
@@ -15,9 +18,8 @@ export default function EditProfile() {
     website: "",
   });
 
-  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoPreview, setPhotoPreview] = useState(DEFAULT_PHOTO);
   const [uploading, setUploading] = useState(false);
-
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   /* ---------------- RESPONSIVE ---------------- */
@@ -33,8 +35,9 @@ export default function EditProfile() {
       if (!res.data.authenticated) return navigate("/login");
 
       const u = res.data.user;
+
       setUser(u);
-      setPhotoPreview(u.photo || "");
+      setPhotoPreview(u.photo || DEFAULT_PHOTO);
       setBio(u.bio || "");
       setSkills((u.skills || []).join(", "));
       setSocial(u.social || {});
@@ -42,12 +45,12 @@ export default function EditProfile() {
   }, []);
 
   /* ---------------------------------------------------------
-       SAVE PROFILE (FIXED)
+       SAVE PROFILE 
   --------------------------------------------------------- */
   const saveChanges = async () => {
     const payload = {
-      name: user.name, // unchanged here
-      username: user.username, // unchanged
+      name: user.name,
+      username: user.username,
       bio,
       skills: skills.split(",").map((s) => s.trim()).filter(Boolean),
       social,
@@ -57,9 +60,12 @@ export default function EditProfile() {
     const res = await API.post("/settings/profile", payload);
 
     if (res.data.success) {
-      const updated = res.data.user;
+      const updated = {
+        ...res.data.user,
+        photo: res.data.user.photo || DEFAULT_PHOTO,
+      };
 
-      // ⭐ UPDATE SESSION CACHE IMMEDIATELY (dashboard uses this)
+      // Update session cache
       sessionStorage.setItem("gc_user", JSON.stringify(updated));
 
       alert("Profile updated!");
@@ -68,7 +74,7 @@ export default function EditProfile() {
   };
 
   /* ---------------------------------------------------------
-       PHOTO UPLOAD (NOW ALSO UPDATES SESSION)
+       PHOTO UPLOAD
   --------------------------------------------------------- */
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
@@ -85,12 +91,15 @@ export default function EditProfile() {
       });
 
       if (res.data.success) {
-        setPhotoPreview(res.data.photo);
+        const newPhoto = res.data.photo || DEFAULT_PHOTO;
 
-        // ⭐ INSTANT SESSION UPDATE
+        setPhotoPreview(newPhoto);
+
+        // Update session
         const updatedUser = {
           ...user,
-          photo: res.data.photo,
+          photo: newPhoto,
+          updatedAt: res.data.updatedAt,
         };
 
         sessionStorage.setItem("gc_user", JSON.stringify(updatedUser));
@@ -120,7 +129,6 @@ export default function EditProfile() {
         fontFamily: "Poppins",
       }}
     >
-      {/* CENTERED CONTAINER */}
       <div
         style={{
           width: "100%",
@@ -143,7 +151,7 @@ export default function EditProfile() {
             }}
           >
             <img
-              src={photoPreview || "/default-avatar.png"}
+              src={photoPreview || DEFAULT_PHOTO}
               style={{
                 width: 100,
                 height: 100,
@@ -200,7 +208,7 @@ export default function EditProfile() {
           />
         </div>
 
-        {/* SOCIAL */}
+        {/* SOCIAL LINKS */}
         <SocialField
           label="GitHub"
           value={social.github}
@@ -239,7 +247,7 @@ export default function EditProfile() {
   );
 }
 
-/* ---------- SOCIAL REUSABLE ---------- */
+/* ---------- SOCIAL FIELD COMPONENT ---------- */
 function SocialField({ label: lbl, value, onChange }) {
   return (
     <div style={{ marginBottom: 22 }}>
@@ -250,7 +258,6 @@ function SocialField({ label: lbl, value, onChange }) {
 }
 
 /* ---------- STYLES ---------- */
-
 const input = {
   width: "100%",
   padding: "12px 14px",
