@@ -24,9 +24,17 @@ export default function Signup() {
     googleHover: isDark ? "#21262d" : "#f3f4f6",
   };
 
+  /* -----------------------------------------
+     HANDLE SIGNUP
+  ----------------------------------------- */
   async function handleSignup() {
     if (!name || !email || !password) {
       setError("All fields are required.");
+      return;
+    }
+
+    if (!email.includes("@") || !email.includes(".")) {
+      setError("Please enter a valid email.");
       return;
     }
 
@@ -38,7 +46,11 @@ export default function Signup() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
 
       const data = await res.json();
@@ -124,6 +136,7 @@ export default function Signup() {
 
         {/* EMAIL */}
         <input
+          type="email"
           placeholder="Email Address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}

@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";     // <-- ADD THIS
 import SetUsername from "./pages/SetUsername";
 
 /* Home */
@@ -48,6 +49,10 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        {/* 🔥 IMPORTANT – Reset Password Route */}
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
+
         <Route path="/set-username" element={<SetUsername />} />
 
         {/* Normal App Routes */}

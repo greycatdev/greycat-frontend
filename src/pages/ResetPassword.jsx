@@ -1,17 +1,22 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
-export default function ForgotPassword() {
+export default function ResetPassword() {
   const navigate = useNavigate();
+  const { token } = useParams();
 
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
-  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
 
+  /* -----------------------------------------
+     THEME
+  ----------------------------------------- */
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
   const theme = {
@@ -22,47 +27,61 @@ export default function ForgotPassword() {
     inputBg: isDark ? "#0d1117" : "#f0f2f4",
   };
 
-  async function handleForgot() {
-    if (!email) {
-      setError("Please enter your email.");
+  /* -----------------------------------------
+     RESET PASSWORD HANDLER
+  ----------------------------------------- */
+  async function handleReset() {
+    if (!password || !confirm) {
+      setError("All fields are required.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    if (password !== confirm) {
+      setError("Passwords do not match.");
       return;
     }
 
     setLoading(true);
     setError("");
-    setMsg("");
 
     try {
-      const res = await fetch(`${BACKEND_URL}/auth/forgot-password`, {
+      const res = await fetch(`${BACKEND_URL}/auth/reset-password/${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ password }),
       });
 
       const data = await res.json();
 
-      if (data?.success) {
-        setMsg("A password reset link has been sent to your email.");
+      if (data.success) {
+        setMsg("Password reset successful! Redirecting...");
+        setTimeout(() => navigate("/login"), 2000);
       } else {
-        setError(data?.message || "Something went wrong.");
+        setError(data.message || "Invalid or expired link.");
       }
     } catch (err) {
-      setError("Network error. Try again.");
+      setError("Something went wrong.");
     }
 
     setLoading(false);
   }
 
+  /* -----------------------------------------
+     UI — RESET FORM
+  ----------------------------------------- */
   return (
     <div
       style={{
         height: "100vh",
-        width: "100vw",
         background: theme.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px",
         fontFamily: "Poppins",
       }}
     >
@@ -77,18 +96,11 @@ export default function ForgotPassword() {
           textAlign: "center",
         }}
       >
-        <h2
-          style={{
-            color: theme.text,
-            fontSize: 20,
-            marginBottom: 24,
-            fontWeight: 600,
-          }}
-        >
-          Forgot Password
+        <h2 style={{ color: theme.text, marginBottom: 20 }}>
+          Reset Password
         </h2>
 
-        {/* SUCCESS */}
+        {/* SUCCESS MESSAGE */}
         {msg && (
           <div
             style={{
@@ -104,7 +116,7 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        {/* ERROR */}
+        {/* ERROR MESSAGE */}
         {error && (
           <div
             style={{
@@ -120,10 +132,29 @@ export default function ForgotPassword() {
           </div>
         )}
 
+        {/* NEW PASSWORD */}
         <input
-          placeholder="Enter your email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          type="password"
+          placeholder="New Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: 6,
+            border: `1px solid ${theme.border}`,
+            background: theme.inputBg,
+            color: theme.text,
+            marginBottom: 12,
+          }}
+        />
+
+        {/* CONFIRM PASSWORD */}
+        <input
+          type="password"
+          placeholder="Confirm Password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
           style={{
             width: "100%",
             padding: "12px",
@@ -135,41 +166,38 @@ export default function ForgotPassword() {
           }}
         />
 
+        {/* RESET BUTTON */}
         <button
-          onClick={handleForgot}
+          onClick={handleReset}
           disabled={loading}
           style={{
             width: "100%",
             padding: "12px",
             borderRadius: 6,
-            background: "#2f81f7",
+            background: "#238636",
             color: "#ffffff",
             cursor: "pointer",
             fontSize: 15,
             opacity: loading ? 0.7 : 1,
-            marginBottom: 18,
           }}
         >
-          {loading ? "Sending..." : "Send Reset Link"}
+          {loading ? "Updating…" : "Reset Password"}
         </button>
 
-        <p style={{ marginTop: 10, color: theme.text, fontSize: 14 }}>
+        {/* BACK TO LOGIN */}
+        <p
+          style={{
+            marginTop: 20,
+            color: theme.text,
+            fontSize: 14,
+          }}
+        >
           Back to{" "}
           <span
             onClick={() => navigate("/login")}
-            style={{ color: "#2f81f7", cursor: "pointer", fontWeight: 500 }}
+            style={{ color: "#2f81f7", cursor: "pointer" }}
           >
             Login
-          </span>
-        </p>
-
-        <p style={{ marginTop: 6, color: theme.text, fontSize: 13 }}>
-          Don’t have an account?{" "}
-          <span
-            onClick={() => navigate("/signup")}
-            style={{ color: "#2f81f7", cursor: "pointer", fontWeight: 500 }}
-          >
-            Sign up
           </span>
         </p>
       </div>
