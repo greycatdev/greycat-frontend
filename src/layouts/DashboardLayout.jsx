@@ -6,8 +6,8 @@ import { Link, useNavigate } from "react-router-dom";
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
-  const DEFAULT_FOX =
-    "https://i.postimg.cc/SKwj9SjK/greycat-avatar.jpg"; // your fox avatar
+  // ⭐ NEW DEFAULT AVATAR
+  const DEFAULT_AVATAR = "/default-image.jpg";
 
   /* ============================================
      1️⃣ USER STATE + SESSION CACHE
@@ -17,22 +17,22 @@ export default function DashboardLayout({ children }) {
   const [authLoading, setAuthLoading] = useState(!cachedUser);
 
   /* ============================================
-     2️⃣ LISTEN FOR PROFILE UPDATES (global sync)
+     2️⃣ GLOBAL USER UPDATE LISTENER
   ============================================ */
   useEffect(() => {
     const sync = () => {
       const updated = sessionStorage.getItem("gc_user");
-      if (updated) setUser(JSON.parse(updated));
+      updated && setUser(JSON.parse(updated));
     };
+
     window.addEventListener("gc_user_updated", sync);
     return () => window.removeEventListener("gc_user_updated", sync);
   }, []);
 
   /* ============================================
-     3️⃣ SIDEBAR + SEARCH UI STATES
+     3️⃣ SIDEBAR + SEARCH UI
   ============================================ */
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
   const [search, setSearch] = useState("");
   const [results, setResults] = useState({ users: [], events: [] });
   const [visible, setVisible] = useState(false);
@@ -58,8 +58,8 @@ export default function DashboardLayout({ children }) {
         if (!mounted) return;
 
         if (res.data.authenticated) {
-          let u = res.data.user;
-          u.photo = u.photo || DEFAULT_FOX;
+          const u = res.data.user;
+          u.photo = u.photo || DEFAULT_AVATAR;
 
           setUser(u);
           sessionStorage.setItem("gc_user", JSON.stringify(u));
@@ -94,28 +94,28 @@ export default function DashboardLayout({ children }) {
 
     searchTimeout.current = setTimeout(() => {
       API.get(`/search?q=${value}`).then((res) => {
-        const updated = {
+        // Fix user image fallback
+        const updatedResults = {
           ...res.data,
           users: res.data.users.map((u) => ({
             ...u,
-            photo: u.photo || DEFAULT_FOX,
+            photo: u.photo || DEFAULT_AVATAR,
           })),
         };
 
-        setResults(updated);
+        setResults(updatedResults);
         setVisible(true);
       });
     }, 250);
   };
 
   /* ============================================
-     6️⃣ CLICK OUTSIDE
+     6️⃣ CLICK OUTSIDE HANDLER
   ============================================ */
   useEffect(() => {
     const handler = (e) => {
-      if (searchRef.current && !searchRef.current.contains(e.target)) {
+      if (searchRef.current && !searchRef.current.contains(e.target))
         setVisible(false);
-      }
 
       if (
         isSidebarOpen &&
@@ -163,10 +163,11 @@ export default function DashboardLayout({ children }) {
     );
   }
 
+  // No user → no page
   if (!user) return null;
 
-  // Safety fallback
-  if (!user.photo) user.photo = DEFAULT_FOX;
+  // Guaranteed fallback
+  if (!user.photo) user.photo = DEFAULT_AVATAR;
 
   /* ============================================
      9️⃣ LOGOUT
@@ -177,7 +178,7 @@ export default function DashboardLayout({ children }) {
   };
 
   /* ============================================
-     🔟 LAYOUT START
+     🔟 LAYOUT
   ============================================ */
   return (
     <>
@@ -195,7 +196,7 @@ export default function DashboardLayout({ children }) {
             flexDirection: "column",
           }}
         >
-          {/* MOBILE SIDEBAR HEADER */}
+          {/* MOBILE SIDEBAR TOP */}
           <div className="gc-mobile-sidebar-header">
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -220,7 +221,11 @@ export default function DashboardLayout({ children }) {
           {/* DESKTOP BRAND */}
           <div
             className="gc-desktop-brand"
-            style={{ display: "flex", alignItems: "center", marginBottom: 10 }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              marginBottom: 10,
+            }}
           >
             <img
               src="/icons/greycat.jpeg"
@@ -244,7 +249,7 @@ export default function DashboardLayout({ children }) {
             }}
           />
 
-          {/* NAV LINKS */}
+          {/* MENU */}
           <SidebarItem label="Home" to="/" icon="home.svg" />
           <SidebarItem label="Explore" to="/explore" icon="explore.svg" />
           <SidebarItem label="Events" to="/events" icon="calendar.svg" />
@@ -283,9 +288,9 @@ export default function DashboardLayout({ children }) {
           </button>
         </aside>
 
-        {/* MAIN SECTION */}
+        {/* MAIN */}
         <div className="gc-main">
-          {/* TOP BRAND MOBILE */}
+          {/* MOBILE BRAND */}
           <div className="gc-mobile-brand-top" onClick={() => navigate("/")}>
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -293,12 +298,10 @@ export default function DashboardLayout({ children }) {
             </div>
           </div>
 
-          {/* TOP BAR */}
+          {/* TOPBAR */}
           <div className="gc-topbar">
-            <div
-              className="gc-mobile-toggle"
-              onClick={() => setIsSidebarOpen(true)}
-            >
+            {/* Mobile Toggle */}
+            <div className="gc-mobile-toggle" onClick={() => setIsSidebarOpen(true)}>
               <svg width="24" height="24" fill="currentColor">
                 <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
               </svg>
@@ -326,6 +329,7 @@ export default function DashboardLayout({ children }) {
                 }}
               />
 
+              {/* Search dropdown */}
               {visible && (
                 <div
                   style={{
@@ -353,7 +357,7 @@ export default function DashboardLayout({ children }) {
                     </p>
                   ) : (
                     <>
-                      {/* USERS */}
+                      {/* Users */}
                       {results.users.length > 0 && (
                         <>
                           <p
@@ -375,8 +379,8 @@ export default function DashboardLayout({ children }) {
                               }}
                             >
                               <img
-                                src={u.photo || DEFAULT_FOX}
-                                onError={(e) => (e.target.src = DEFAULT_FOX)}
+                                src={u.photo || DEFAULT_AVATAR}
+                                onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                                 style={{
                                   width: 24,
                                   height: 24,
@@ -390,7 +394,7 @@ export default function DashboardLayout({ children }) {
                         </>
                       )}
 
-                      {/* EVENTS */}
+                      {/* Events */}
                       {results.events.length > 0 && (
                         <>
                           <p
@@ -422,10 +426,10 @@ export default function DashboardLayout({ children }) {
               )}
             </div>
 
-            {/* TOPBAR AVATAR — FIXED */}
+            {/* TOPBAR AVATAR */}
             <img
-              src={user.photo || DEFAULT_FOX}
-              onError={(e) => (e.target.src = DEFAULT_FOX)}
+              src={user.photo || DEFAULT_AVATAR}
+              onError={(e) => (e.target.src = DEFAULT_AVATAR)}
               onClick={() => navigate(`/${user.username}`)}
               style={{
                 width: 32,
@@ -438,7 +442,7 @@ export default function DashboardLayout({ children }) {
             />
           </div>
 
-          {/* PAGE CONTENT */}
+          {/* MAIN CONTENT */}
           <main className="gc-main-content">{children}</main>
         </div>
       </div>

@@ -22,8 +22,8 @@ export default function PublicProfile() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  const DEFAULT_FOX =
-    "https://i.postimg.cc/SKwj9SjK/greycat-avatar.jpg"; // your fox image
+  // ⭐ NEW DEFAULT AVATAR FROM BACKEND PUBLIC
+  const DEFAULT_AVATAR = "/default-image.jpg";
 
   /* ----------------- Screen Resize Listener ----------------- */
   useEffect(() => {
@@ -46,6 +46,7 @@ export default function PublicProfile() {
     const fetchProfile = async () => {
       try {
         const res = await API.get(`/user/by-username/${username}`);
+
         if (!res.data.success) {
           setError("User not found");
           setLoading(false);
@@ -53,15 +54,20 @@ export default function PublicProfile() {
         }
 
         const user = res.data.user;
-        user.photo = user.photo || DEFAULT_FOX;
+
+        // ⭐ Always force fallback if photo missing
+        user.photo = user.photo || DEFAULT_AVATAR;
+
         setProfileUser(user);
 
         API.get(`/follow/status/${username}`).then((r) =>
           setIsFollowing(r.data.success ? r.data.following : false)
         );
+
         API.get(`/follow/followers/${username}`).then((r) =>
           setFollowersCount(r.data.success ? r.data.followers.length : 0)
         );
+
         API.get(`/follow/following/${username}`).then((r) =>
           setFollowingCount(r.data.success ? r.data.following.length : 0)
         );
@@ -127,6 +133,8 @@ export default function PublicProfile() {
 
   if (!profileUser) return <DashboardLayout>User not found.</DashboardLayout>;
 
+  const avatar = profileUser.photo || DEFAULT_AVATAR;
+
   return (
     <DashboardLayout>
       <div style={{ fontFamily: "Poppins", padding: "0 12px", color: "#c9d1d9" }}>
@@ -146,9 +154,9 @@ export default function PublicProfile() {
         >
           {/* Avatar */}
           <img
-            src={profileUser.photo || DEFAULT_FOX}
+            src={avatar}
             alt={profileUser.name}
-            onError={(e) => (e.target.src = DEFAULT_FOX)}
+            onError={(e) => (e.target.src = DEFAULT_AVATAR)}
             style={{
               width: isMobile ? 90 : 140,
               height: isMobile ? 90 : 140,
@@ -160,17 +168,14 @@ export default function PublicProfile() {
 
           {/* Right Section */}
           <div style={{ flex: 1 }}>
-            {/* Name */}
-            <h1 style={{ margin: 0, color: "#c9d1d9", fontSize: isMobile ? 20 : 26 }}>
+            <h1 style={{ margin: 0, fontSize: isMobile ? 20 : 26 }}>
               {profileUser.name}
             </h1>
 
-            {/* Username */}
             <p style={{ margin: "4px 0", color: "#8b949e", fontSize: 14 }}>
               @{profileUser.username}
             </p>
 
-            {/* Email */}
             {profileUser.preferences?.showEmail && (
               <p style={{ color: "#8b949e", fontSize: 14 }}>
                 {profileUser.email}
@@ -178,21 +183,18 @@ export default function PublicProfile() {
             )}
 
             {/* Follow / Edit */}
-            <div style={{ marginTop: 10, width: isMobile ? "100%" : "auto" }}>
+            <div style={{ marginTop: 10 }}>
               {loggedInUser?.username === profileUser.username ? (
                 <button
                   onClick={() => navigate("/edit-profile")}
-                  style={{ ...btnPrimary, width: isMobile ? "100%" : "auto" }}
+                  style={btnPrimary}
                 >
                   Edit Profile
                 </button>
               ) : (
                 <button
                   onClick={isFollowing ? unfollow : follow}
-                  style={{
-                    ...(isFollowing ? btnSecondary : btnPrimary),
-                    width: isMobile ? "100%" : "auto",
-                  }}
+                  style={isFollowing ? btnSecondary : btnPrimary}
                 >
                   {isFollowing ? "Following" : "Follow"}
                 </button>
@@ -201,7 +203,7 @@ export default function PublicProfile() {
           </div>
         </div>
 
-        {/* Stats Row */}
+        {/* Stats */}
         <div
           style={{
             marginTop: 18,
@@ -223,30 +225,15 @@ export default function PublicProfile() {
           </p>
         )}
 
-        {/* SOCIAL LINKS */}
-        <div
-          style={{
-            marginTop: 12,
-            display: "flex",
-            gap: 14,
-            flexWrap: "wrap",
-          }}
-        >
-          {profileUser.social?.github && (
-            <a href={profileUser.social.github} style={socialLink}>GitHub</a>
-          )}
-          {profileUser.social?.linkedin && (
-            <a href={profileUser.social.linkedin} style={socialLink}>LinkedIn</a>
-          )}
-          {profileUser.social?.instagram && (
-            <a href={profileUser.social.instagram} style={socialLink}>Instagram</a>
-          )}
-          {profileUser.social?.website && (
-            <a href={profileUser.social.website} style={socialLink}>Website</a>
-          )}
+        {/* SOCIAL */}
+        <div style={{ marginTop: 12, display: "flex", gap: 14, flexWrap: "wrap" }}>
+          {profileUser.social?.github && <a href={profileUser.social.github} style={socialLink}>GitHub</a>}
+          {profileUser.social?.linkedin && <a href={profileUser.social.linkedin} style={socialLink}>LinkedIn</a>}
+          {profileUser.social?.instagram && <a href={profileUser.social.instagram} style={socialLink}>Instagram</a>}
+          {profileUser.social?.website && <a href={profileUser.social.website} style={socialLink}>Website</a>}
         </div>
 
-        {/* ---------------- SKILLS ---------------- */}
+        {/* SKILLS */}
         {profileUser.skills?.length > 0 && (
           <div style={{ marginTop: 35 }}>
             <h3 style={sectionTitle}>Skills</h3>
@@ -258,7 +245,7 @@ export default function PublicProfile() {
           </div>
         )}
 
-        {/* ---------------- PROJECTS ---------------- */}
+        {/* PROJECTS */}
         {profileUser.preferences?.showProjects !== false && (
           <div style={{ marginTop: 45 }}>
             <h3 style={sectionTitle}>Projects</h3>
@@ -273,21 +260,17 @@ export default function PublicProfile() {
                   gap: 20,
                 }}
               >
-                {projects.map((proj) => (
+                {projects.map((proj) =>
                   proj ? (
                     <div
                       key={proj._id}
                       onClick={() => navigate(`/project/${proj._id}`)}
                       style={projectCard}
                     >
-                      <h4 style={{ margin: "10px 0", color: "#c9d1d9" }}>
-                        {proj.title}
-                      </h4>
-
+                      <h4 style={{ margin: "10px 0" }}>{proj.title}</h4>
                       <p style={{ fontSize: 13, color: "#8b949e" }}>
                         {Array.isArray(proj.tech) ? proj.tech.join(", ") : proj.tech}
                       </p>
-
                       {proj.user && (
                         <p style={{ color: "#8b949e", fontSize: 12 }}>
                           @{proj.user.username}
@@ -295,13 +278,13 @@ export default function PublicProfile() {
                       )}
                     </div>
                   ) : null
-                ))}
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* ---------------- POSTS ---------------- */}
+        {/* POSTS */}
         <div style={{ marginTop: 55, marginBottom: 40 }}>
           <h3 style={sectionTitle}>Posts</h3>
 
@@ -320,10 +303,7 @@ export default function PublicProfile() {
                   <img
                     key={post._id}
                     src={post.image}
-                    style={{
-                      ...postCard,
-                      height: isMobile ? 150 : 240,
-                    }}
+                    style={{ ...postCard, height: isMobile ? 150 : 240 }}
                     onClick={() => navigate(`/post/${post._id}`)}
                     onError={(e) => (e.target.style.display = "none")}
                   />
