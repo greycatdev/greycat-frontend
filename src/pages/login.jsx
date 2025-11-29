@@ -37,12 +37,14 @@ export default function Login() {
         const data = await res.json();
 
         if (data?.authenticated) {
-          if (!data.user.username) {
-            navigate("/set-username");
-          } else {
-            navigate("/");
+          const user = data.user;
+
+          // FIX: Always _id, not id
+          if (!user.username) {
+            return navigate("/set-username");
           }
-          return;
+
+          return navigate("/");
         }
       } catch (err) {
         console.log("Auth check failed", err);
@@ -55,7 +57,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     SHOW LOADING SCREEN
+     SHOW LOADING SCREEN WHILE CHECKING SESSION
   ----------------------------------------- */
   if (checkingAuth) {
     return (
@@ -99,13 +101,14 @@ export default function Login() {
       const data = await res.json();
 
       if (data?.success) {
-        // ⭐ REDIRECT BASED ON USERNAME STATUS
-        if (!data.user.username) {
-          navigate("/set-username");
+        const user = data.user;
+
+        // FIXED — ALWAYS use _id
+        if (!user.username) {
+          return navigate("/set-username");
         } else {
-          navigate("/");
+          return navigate("/");
         }
-        return;
       } else {
         setError(data?.message || "Login failed");
       }
@@ -117,7 +120,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     THEME
+     THEME (Dark / Light)
   ----------------------------------------- */
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -262,7 +265,7 @@ export default function Login() {
           {loading ? "Signing in…" : "Login"}
         </button>
 
-        {/* Google Button */}
+        {/* GOOGLE LOGIN */}
         <button
           onClick={() => (window.location.href = `${BACKEND_URL}/auth/google`)}
           style={{
@@ -296,7 +299,7 @@ export default function Login() {
           Continue with Google
         </button>
 
-        {/* Github */}
+        {/* GITHUB LOGIN */}
         <button
           onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
           style={{

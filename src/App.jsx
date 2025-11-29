@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";     // <-- ADD THIS
+import ResetPassword from "./pages/ResetPassword";
 import SetUsername from "./pages/SetUsername";
 
 /* Home */
@@ -18,7 +18,6 @@ import EditProfile from "./pages/EditProfile";
 import Explore from "./pages/Explore";
 
 /* Events */
-import Events from "./pages/Events";
 import EventList from "./pages/EventList";
 import EventCreate from "./pages/EventCreate";
 import EventPage from "./pages/EventPage";
@@ -28,9 +27,9 @@ import CreatePost from "./pages/CreatePost";
 import PostPage from "./pages/PostPage";
 
 /* Projects */
+import Projects from "./pages/Projects";
 import CreateProject from "./pages/CreateProject";
 import ProjectPage from "./pages/ProjectPage";
-import Projects from "./pages/Projects";
 import GithubImport from "./pages/GithubImport";
 
 /* Settings */
@@ -45,23 +44,23 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* Authentication Routes */}
+        {/* ----------------------------
+            AUTH ROUTES
+        ----------------------------- */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-
-        {/* 🔥 IMPORTANT – Reset Password Route */}
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-
         <Route path="/set-username" element={<SetUsername />} />
 
-        {/* Normal App Routes */}
+        {/* ----------------------------
+            MAIN APP ROUTES
+        ----------------------------- */}
         <Route path="/" element={<Home />} />
         <Route path="/edit-profile" element={<EditProfile />} />
         <Route path="/settings" element={<Settings />} />
 
-        <Route path="/:username" element={<PublicProfile />} />
-
+        {/* Explore */}
         <Route path="/explore" element={<Explore />} />
 
         {/* Posts */}
@@ -83,7 +82,14 @@ export default function App() {
         <Route path="/channels" element={<Channels />} />
         <Route path="/channel/:id" element={<ChannelPage />} />
 
-        {/* Fallback */}
+        {/* ----------------------------
+            ⚠ IMPORTANT: Public Profile Route
+            MUST BE AT THE END so it doesn't
+            override other routes
+        ----------------------------- */}
+        <Route path="/:username" element={<PublicProfile />} />
+
+        {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>

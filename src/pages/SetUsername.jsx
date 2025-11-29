@@ -9,12 +9,13 @@ export default function SetUsername() {
   const [available, setAvailable] = useState(null);
   const [checking, setChecking] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
 
   /* ---------------------------
-      CLEAR QUERY PARAMS
+      CLEAR URL PARAMS
   ---------------------------- */
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -37,19 +38,19 @@ export default function SetUsername() {
 
         if (!data.authenticated) return navigate("/login");
 
-        // ⭐ FIX: use user.id (email/password login) OR user._id (OAuth)
-        const id = data.user.id || data.user._id;
+        // ⭐ Correct ID field handling
+        const id = data.user._id || data.user.id;
 
-        if (!id) return; // don't kick user out immediately
-
+        if (!id) return navigate("/login");
 
         setUserId(id);
 
-        // If username already exists, skip this page
+        // Username already exists → skip page
         if (data.user.username) {
-          navigate("/");
-          return;
+          return navigate("/");
         }
+
+        setLoadingUser(false);
       } catch (err) {
         navigate("/login");
       }
@@ -59,7 +60,7 @@ export default function SetUsername() {
   }, []);
 
   /* ---------------------------
-      USERNAME FORMAT VALIDATOR
+      USERNAME FORMAT VALIDATION
   ---------------------------- */
   const validateFormat = (name) => /^[a-zA-Z0-9._]+$/.test(name);
 
@@ -75,18 +76,14 @@ export default function SetUsername() {
     }
 
     if (!validateFormat(trimmed)) {
-      alert(
-        "Invalid format. Only letters, numbers, dot (.) and underscore (_) allowed."
-      );
+      alert("Invalid format. Only letters, numbers, dot (.) and underscore (_) allowed.");
       return;
     }
 
     setChecking(true);
 
     try {
-      const res = await fetch(
-        `${BACKEND_URL}/user/check-username/${trimmed}`
-      );
+      const res = await fetch(`${BACKEND_URL}/user/check-username/${trimmed}`);
       const data = await res.json();
       setAvailable(!data.exists);
     } catch {
@@ -116,6 +113,27 @@ export default function SetUsername() {
     if (data.success) navigate("/");
     else alert(data.message || "Could not save username");
   };
+
+  /* ---------------------------
+      LOADER
+  ---------------------------- */
+  if (loadingUser) {
+    return (
+      <div
+        style={{
+          height: "100vh",
+          background: "#0d1117",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#8b949e",
+          fontFamily: "Poppins",
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
 
   /* ---------------------------
       UI
