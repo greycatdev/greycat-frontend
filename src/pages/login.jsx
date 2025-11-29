@@ -208,11 +208,31 @@ export default function Login() {
             border: `1px solid ${theme.border}`,
             background: theme.inputBg,
             color: theme.text,
-            marginBottom: 16,
+            marginBottom: 6,
             outline: "none",
             fontSize: 14,
           }}
         />
+
+        {/* FORGOT PASSWORD LINK */}
+        <div
+          style={{
+            width: "100%",
+            textAlign: "right",
+            marginBottom: 16,
+          }}
+        >
+          <span
+            onClick={() => navigate("/forgot-password")}
+            style={{
+              color: "#2f81f7",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            Forgot password?
+          </span>
+        </div>
 
         {/* LOGIN BUTTON */}
         <button
@@ -292,6 +312,27 @@ export default function Login() {
           />
           Continue with GitHub
         </button>
+
+        {/* SIGNUP LINK */}
+        <p
+          style={{
+            marginTop: 18,
+            fontSize: 14,
+            color: theme.text,
+          }}
+        >
+          Don’t have an account?{" "}
+          <span
+            onClick={() => navigate("/signup")}
+            style={{
+              color: "#2f81f7",
+              cursor: "pointer",
+              fontWeight: 500,
+            }}
+          >
+            Sign up
+          </span>
+        </p>
       </div>
     </div>
   );

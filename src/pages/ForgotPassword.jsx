@@ -24,7 +24,7 @@ export default function ForgotPassword() {
 
   async function handleForgot() {
     if (!email) {
-      setError("Enter your email");
+      setError("Please enter your email address.");
       return;
     }
 
@@ -42,12 +42,12 @@ export default function ForgotPassword() {
       const data = await res.json();
 
       if (data?.success) {
-        setMsg("Reset link sent to your email!");
+        setMsg("A password reset link has been sent to your email.");
       } else {
-        setError(data?.message || "Something went wrong");
+        setError(data?.message || "Something went wrong.");
       }
     } catch (err) {
-      setError("Network error");
+      setError("Network error. Try again.");
     }
 
     setLoading(false);
@@ -57,10 +57,12 @@ export default function ForgotPassword() {
     <div
       style={{
         height: "100vh",
+        width: "100vw",
         background: theme.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "20px",
         fontFamily: "Poppins",
       }}
     >
@@ -75,8 +77,18 @@ export default function ForgotPassword() {
           textAlign: "center",
         }}
       >
-        <h2 style={{ color: theme.text, marginBottom: 20 }}>Forgot Password</h2>
+        <h2
+          style={{
+            color: theme.text,
+            fontSize: 20,
+            marginBottom: 24,
+            fontWeight: 600,
+          }}
+        >
+          Reset Your Password
+        </h2>
 
+        {/* SUCCESS MESSAGE */}
         {msg && (
           <div
             style={{
@@ -92,6 +104,7 @@ export default function ForgotPassword() {
           </div>
         )}
 
+        {/* ERROR MESSAGE */}
         {error && (
           <div
             style={{
@@ -107,6 +120,7 @@ export default function ForgotPassword() {
           </div>
         )}
 
+        {/* EMAIL INPUT */}
         <input
           placeholder="Enter your email"
           value={email}
@@ -119,9 +133,12 @@ export default function ForgotPassword() {
             background: theme.inputBg,
             color: theme.text,
             marginBottom: 16,
+            outline: "none",
+            fontSize: 14,
           }}
         />
 
+        {/* RESET BUTTON */}
         <button
           onClick={handleForgot}
           disabled={loading}
@@ -134,18 +151,31 @@ export default function ForgotPassword() {
             cursor: "pointer",
             fontSize: 15,
             opacity: loading ? 0.7 : 1,
+            marginBottom: 18,
           }}
         >
           {loading ? "Sending..." : "Send Reset Link"}
         </button>
 
-        <p style={{ marginTop: 20, color: theme.text, fontSize: 14 }}>
+        {/* BACK TO LOGIN */}
+        <p style={{ marginTop: 10, color: theme.text, fontSize: 14 }}>
           Back to{" "}
           <span
             onClick={() => navigate("/login")}
-            style={{ color: "#2f81f7", cursor: "pointer" }}
+            style={{ color: "#2f81f7", cursor: "pointer", fontWeight: 500 }}
           >
             Login
+          </span>
+        </p>
+
+        {/* BACK TO SIGNUP */}
+        <p style={{ marginTop: 6, color: theme.text, fontSize: 13 }}>
+          Don’t have an account?{" "}
+          <span
+            onClick={() => navigate("/signup")}
+            style={{ color: "#2f81f7", cursor: "pointer", fontWeight: 500 }}
+          >
+            Sign up
           </span>
         </p>
       </div>

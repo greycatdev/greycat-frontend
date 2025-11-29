@@ -21,6 +21,7 @@ export default function Signup() {
     text: isDark ? "#e6edf3" : "#1f2328",
     border: isDark ? "#30363d" : "#d0d7de",
     inputBg: isDark ? "#0d1117" : "#f0f2f4",
+    googleHover: isDark ? "#21262d" : "#f3f4f6",
   };
 
   async function handleSignup() {
@@ -58,10 +59,12 @@ export default function Signup() {
     <div
       style={{
         height: "100vh",
+        width: "100vw",
         background: theme.bg,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
+        padding: "20px",
         fontFamily: "Poppins",
       }}
     >
@@ -76,13 +79,23 @@ export default function Signup() {
           textAlign: "center",
         }}
       >
-        <h2 style={{ color: theme.text, marginBottom: 20 }}>Create Account</h2>
+        <h2
+          style={{
+            fontSize: "20px",
+            marginBottom: 24,
+            fontWeight: 600,
+            color: theme.text,
+          }}
+        >
+          Create your GreyCat account
+        </h2>
 
+        {/* ERROR MESSAGE */}
         {error && (
           <div
             style={{
               marginBottom: 15,
-              padding: 10,
+              padding: "10px",
               borderRadius: 6,
               background: "#ffebe9",
               color: "#cf222e",
@@ -93,6 +106,7 @@ export default function Signup() {
           </div>
         )}
 
+        {/* FULL NAME */}
         <input
           placeholder="Full Name"
           value={name}
@@ -108,6 +122,7 @@ export default function Signup() {
           }}
         />
 
+        {/* EMAIL */}
         <input
           placeholder="Email Address"
           value={email}
@@ -123,6 +138,7 @@ export default function Signup() {
           }}
         />
 
+        {/* PASSWORD */}
         <input
           type="password"
           placeholder="Password"
@@ -139,6 +155,7 @@ export default function Signup() {
           }}
         />
 
+        {/* SIGNUP BUTTON */}
         <button
           onClick={handleSignup}
           disabled={loading}
@@ -150,17 +167,108 @@ export default function Signup() {
             color: "#ffffff",
             cursor: "pointer",
             fontSize: 15,
+            marginBottom: 16,
             opacity: loading ? 0.7 : 1,
           }}
         >
           {loading ? "Creating..." : "Sign Up"}
         </button>
 
-        <p style={{ marginTop: 20, color: theme.text, fontSize: 14 }}>
+        {/* OR */}
+        <div
+          style={{
+            color: theme.text,
+            fontSize: 13,
+            margin: "10px 0",
+            opacity: 0.7,
+          }}
+        >
+          OR
+        </div>
+
+        {/* GOOGLE BUTTON */}
+        <button
+          onClick={() => (window.location.href = `${BACKEND_URL}/auth/google`)}
+          style={{
+            width: "100%",
+            padding: "14px",
+            marginBottom: "12px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            borderRadius: 6,
+            background: theme.cardBg,
+            border: `1px solid ${theme.border}`,
+            color: theme.text,
+            fontSize: 15,
+            cursor: "pointer",
+            transition: "0.15s",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = theme.googleHover)
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = theme.cardBg)
+          }
+        >
+          <img
+            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
+            width="20"
+            style={{ filter: isDark ? "invert(1)" : "none" }}
+          />
+          Continue with Google
+        </button>
+
+        {/* GITHUB BUTTON */}
+        <button
+          onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
+          style={{
+            width: "100%",
+            padding: "14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "10px",
+            borderRadius: 6,
+            background: "#24292f",
+            border: "1px solid #1b1f24",
+            color: "#ffffff",
+            fontSize: 15,
+            cursor: "pointer",
+            transition: "0.15s",
+          }}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background = "#1f2328")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background = "#24292f")
+          }
+        >
+          <img
+            src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
+            width="20"
+            style={{ filter: "invert(1)" }}
+          />
+          Continue with GitHub
+        </button>
+
+        {/* LOGIN LINK */}
+        <p
+          style={{
+            marginTop: 18,
+            fontSize: 14,
+            color: theme.text,
+          }}
+        >
           Already have an account?{" "}
           <span
             onClick={() => navigate("/login")}
-            style={{ color: "#2f81f7", cursor: "pointer" }}
+            style={{
+              color: "#2f81f7",
+              cursor: "pointer",
+              fontWeight: 500,
+            }}
           >
             Login
           </span>
