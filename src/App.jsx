@@ -6,9 +6,6 @@ import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import SetUsername from "./pages/SetUsername";
 
-/* Protected Wrapper */
-import ProtectedRoute from "./components/ProtectedRoute";
-
 /* Home */
 import Home from "./pages/home";
 
@@ -47,156 +44,42 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* PUBLIC ROUTES (No auth required) */}
+        {/* Authentication Routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/set-username" element={<SetUsername />} />
 
-        {/* PROTECTED ROUTES */}
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
+        {/* Normal App Routes */}
+        <Route path="/" element={<Home />} />
+        <Route path="/edit-profile" element={<EditProfile />} />
+        <Route path="/settings" element={<Settings />} />
 
-        <Route
-          path="/edit-profile"
-          element={
-            <ProtectedRoute>
-              <EditProfile />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/:username" element={<PublicProfile />} />
 
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/explore" element={<Explore />} />
 
-        <Route
-          path="/:username"
-          element={
-            <ProtectedRoute>
-              <PublicProfile />
-            </ProtectedRoute>
-          }
-        />
+        {/* Posts */}
+        <Route path="/create-post" element={<CreatePost />} />
+        <Route path="/post/:id" element={<PostPage />} />
 
-        <Route
-          path="/explore"
-          element={
-            <ProtectedRoute>
-              <Explore />
-            </ProtectedRoute>
-          }
-        />
+        {/* Events */}
+        <Route path="/events" element={<EventList />} />
+        <Route path="/event/create" element={<EventCreate />} />
+        <Route path="/event/:id" element={<EventPage />} />
 
-        {/* POSTS */}
-        <Route
-          path="/create-post"
-          element={
-            <ProtectedRoute>
-              <CreatePost />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/post/:id"
-          element={
-            <ProtectedRoute>
-              <PostPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Projects */}
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/create-project" element={<CreateProject />} />
+        <Route path="/project/:id" element={<ProjectPage />} />
+        <Route path="/import/github" element={<GithubImport />} />
 
-        {/* EVENTS */}
-        <Route
-          path="/events"
-          element={
-            <ProtectedRoute>
-              <EventList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/event/create"
-          element={
-            <ProtectedRoute>
-              <EventCreate />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/event/:id"
-          element={
-            <ProtectedRoute>
-              <EventPage />
-            </ProtectedRoute>
-          }
-        />
+        {/* Channels */}
+        <Route path="/channels" element={<Channels />} />
+        <Route path="/channel/:id" element={<ChannelPage />} />
 
-        {/* PROJECTS */}
-        <Route
-          path="/projects"
-          element={
-            <ProtectedRoute>
-              <Projects />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/create-project"
-          element={
-            <ProtectedRoute>
-              <CreateProject />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/project/:id"
-          element={
-            <ProtectedRoute>
-              <ProjectPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/import/github"
-          element={
-            <ProtectedRoute>
-              <GithubImport />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* CHANNELS */}
-        <Route
-          path="/channels"
-          element={
-            <ProtectedRoute>
-              <Channels />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/channel/:id"
-          element={
-            <ProtectedRoute>
-              <ChannelPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* FALLBACK */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
     </BrowserRouter>
