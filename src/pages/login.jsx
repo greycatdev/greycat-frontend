@@ -6,6 +6,10 @@ export default function Login() {
   const location = useLocation();
 
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const BACKEND_URL =
     import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
@@ -33,7 +37,6 @@ export default function Login() {
 
         const data = await res.json();
 
-        // Valid logged-in state
         if (data?.authenticated) {
           navigate("/");
           return;
@@ -42,14 +45,14 @@ export default function Login() {
         console.log("Auth check failed", err);
       }
 
-      setCheckingAuth(false); // allow page to render
+      setCheckingAuth(false);
     }
 
     checkAuth();
   }, []);
 
   /* -----------------------------------------
-     LOADER UNTIL AUTH IS VERIFIED
+     LOADER WHILE CHECKING SESSION
   ----------------------------------------- */
   if (checkingAuth) {
     return (
@@ -71,18 +74,42 @@ export default function Login() {
   }
 
   /* -----------------------------------------
-     LOGIN HANDLERS
+     EMAIL + PASSWORD LOGIN HANDLER
   ----------------------------------------- */
-  const handleGoogleLogin = () => {
-    window.location.href = `${BACKEND_URL}/auth/google`;
-  };
+  const handleEmailLogin = async () => {
+    if (!email || !password) {
+      setError("Please fill all fields.");
+      return;
+    }
 
-  const handleGithubLogin = () => {
-    window.location.href = `${BACKEND_URL}/auth/github`;
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (data?.success) {
+        navigate("/");
+        return;
+      } else {
+        setError(data?.message || "Login failed");
+      }
+    } catch (err) {
+      setError("Something went wrong.");
+    }
+
+    setLoading(false);
   };
 
   /* -----------------------------------------
-     THEME (DARK/LIGHT DETECTION)
+     THEME SETUP
   ----------------------------------------- */
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -92,6 +119,7 @@ export default function Login() {
     text: isDark ? "#e6edf3" : "#1f2328",
     border: isDark ? "#30363d" : "#d0d7de",
     googleHover: isDark ? "#21262d" : "#f3f4f6",
+    inputBg: isDark ? "#0d1117" : "#f0f2f4",
   };
 
   /* -----------------------------------------
@@ -132,9 +160,83 @@ export default function Login() {
           Sign in to GreyCat
         </h1>
 
+        {/* ERROR MESSAGE */}
+        {error && (
+          <div
+            style={{
+              marginBottom: 15,
+              padding: "10px",
+              borderRadius: 6,
+              background: "#ffebe9",
+              color: "#cf222e",
+              fontSize: 14,
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* EMAIL */}
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: 6,
+            border: `1px solid ${theme.border}`,
+            background: theme.inputBg,
+            color: theme.text,
+            marginBottom: 12,
+            outline: "none",
+            fontSize: 14,
+          }}
+        />
+
+        {/* PASSWORD */}
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: 6,
+            border: `1px solid ${theme.border}`,
+            background: theme.inputBg,
+            color: theme.text,
+            marginBottom: 16,
+            outline: "none",
+            fontSize: 14,
+          }}
+        />
+
+        {/* LOGIN BUTTON */}
+        <button
+          onClick={handleEmailLogin}
+          disabled={loading}
+          style={{
+            width: "100%",
+            padding: "12px",
+            borderRadius: 6,
+            background: "#238636",
+            border: "none",
+            color: "#ffffff",
+            fontSize: 15,
+            cursor: "pointer",
+            marginBottom: 20,
+            opacity: loading ? 0.7 : 1,
+          }}
+        >
+          {loading ? "Signing in…" : "Login"}
+        </button>
+
         {/* Google Button */}
         <button
-          onClick={handleGoogleLogin}
+          onClick={() => (window.location.href = `${BACKEND_URL}/auth/google`)}
           style={{
             width: "100%",
             padding: "14px",
@@ -157,16 +259,14 @@ export default function Login() {
           <img
             src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/google/google-original.svg"
             width="20"
-            style={{
-              filter: isDark ? "invert(1)" : "none",
-            }}
+            style={{ filter: isDark ? "invert(1)" : "none" }}
           />
           Continue with Google
         </button>
 
         {/* GitHub Button */}
         <button
-          onClick={handleGithubLogin}
+          onClick={() => (window.location.href = `${BACKEND_URL}/auth/github`)}
           style={{
             width: "100%",
             padding: "14px",
