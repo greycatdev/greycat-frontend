@@ -4,6 +4,8 @@ import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 import CarLoader from "./CarLoader";
 
+const DEFAULT_AVATAR = "/default-image.jpg";
+
 export default function Home() {
   const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
@@ -21,7 +23,7 @@ export default function Home() {
     return posted.toLocaleDateString();
   };
 
-  /* ---------------------- FETCH POSTS ONLY ---------------------- */
+  /* ---------------------- FETCH POSTS ---------------------- */
   useEffect(() => {
     API.get("/post/feed")
       .then((res) => {
@@ -32,7 +34,6 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  /* ---------------------- LOADER (NO DASHBOARDLAYOUT WRAP) ---------------------- */
   if (loading) return <CarLoader />;
 
   return (
@@ -74,7 +75,7 @@ export default function Home() {
                   boxShadow: "0 4px 14px rgba(0,0,0,0.3)",
                 }}
               >
-                {/* ---------------------- USER HEADER ---------------------- */}
+                {/* ---------------- USER HEADER ---------------- */}
                 <div
                   style={{
                     display: "flex",
@@ -88,7 +89,8 @@ export default function Home() {
                   }
                 >
                   <img
-                    src={post?.user?.photo || "https://greycat-backend.onrender.com/default-image.jpg"}
+                    src={post?.user?.photo || DEFAULT_AVATAR}
+                    onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                     style={{
                       width: 44,
                       height: 44,
@@ -122,7 +124,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* ---------------------- IMAGE ---------------------- */}
+                {/* ---------------- IMAGE ---------------- */}
                 <img
                   src={post.image}
                   alt="post"
@@ -137,7 +139,7 @@ export default function Home() {
                   onClick={() => navigate(`/post/${post._id}`)}
                 />
 
-                {/* ---------------------- CAPTION ---------------------- */}
+                {/* ---------------- CAPTION ---------------- */}
                 {post.caption && (
                   <div style={{ padding: "12px 16px 16px 16px" }}>
                     <span

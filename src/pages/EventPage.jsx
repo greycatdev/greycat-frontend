@@ -4,47 +4,44 @@ import { useParams, useNavigate } from "react-router-dom";
 import { API } from "../api";
 import DashboardLayout from "../layouts/DashboardLayout";
 
-// --- START: Helper for responsive styles based on screen size (simulated media query) ---
+const DEFAULT_AVATAR = "/default-image.jpg";
+
+/* ---------------- Responsive Styles Helper ---------------- */
 const getResponsiveStyles = () => {
   const isMobile = window.innerWidth <= 600;
 
   return {
-    // For the main wrapper
     mainContainer: {
       maxWidth: 900,
-      width: "100%", // Use full width on mobile
+      width: "100%",
       margin: "0 auto",
-      padding: isMobile ? "10px" : "20px", // Less padding on small screens
+      padding: isMobile ? "10px" : "20px",
       fontFamily: "Poppins, system-ui, sans-serif",
       color: "#c9d1d9",
     },
-    // For the Banner Section
     bannerContainer: {
       position: "relative",
-      height: isMobile ? 180 : 220, // Reduced height for mobile
+      height: isMobile ? 180 : 220,
       overflow: "hidden",
     },
-    // For the Host and Actions Section (To force stacking on mobile)
     hostActions: {
       display: "flex",
-      flexDirection: isMobile ? "column" : "row", // Stack on mobile
-      alignItems: isMobile ? "flex-start" : "center", // Align to start on mobile
+      flexDirection: isMobile ? "column" : "row",
+      alignItems: isMobile ? "flex-start" : "center",
       gap: 14,
       marginBottom: 18,
     },
-    // For the right-side action buttons (Share/Delete)
     actionButtons: {
-      marginLeft: isMobile ? "0" : "auto", // Remove auto margin on mobile
-      marginTop: isMobile ? "10px" : "0", // Add top margin on mobile
-      width: isMobile ? "100%" : "auto", // Take full width on mobile
+      marginLeft: isMobile ? "0" : "auto",
+      marginTop: isMobile ? "10px" : "0",
+      width: isMobile ? "100%" : "auto",
       display: "flex",
-      flexWrap: "wrap", // Allow buttons to wrap
+      flexWrap: "wrap",
       gap: 10,
     },
-    // For individual action buttons
     actionButtonBase: {
-      flexGrow: isMobile ? 1 : 0, // Stretch buttons horizontally on mobile
-      justifyContent: "center", // Center text in stretched buttons
+      flexGrow: isMobile ? 1 : 0,
+      justifyContent: "center",
       padding: "6px 10px",
       borderRadius: 6,
       border: "1px solid #30363d",
@@ -57,7 +54,6 @@ const getResponsiveStyles = () => {
       gap: 6,
       textDecoration: "none",
     },
-    // For the Join/Leave button
     joinLeaveButton: {
       width: "100%",
       padding: "12px 14px",
@@ -72,16 +68,15 @@ const getResponsiveStyles = () => {
 
 function useResponsiveStyles() {
   const [styles, setStyles] = useState(getResponsiveStyles());
-
   useEffect(() => {
     const handleResize = () => setStyles(getResponsiveStyles());
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
   return styles;
 }
-// --- END: Helper for responsive styles ---
+
+/* =============================================================== */
 
 export default function EventPage() {
   const { id } = useParams();
@@ -93,9 +88,9 @@ export default function EventPage() {
   const [countdown, setCountdown] = useState(null);
   const [copyStatus, setCopyStatus] = useState("");
 
-  const styles = useResponsiveStyles(); // Use responsive styles hook
+  const styles = useResponsiveStyles();
 
-  /* ---------------- LOAD EVENT + USER ---------------- */
+  /* ---------------- Load event + user ---------------- */
   const loadEvent = () => {
     API.get(`/event/${id}`).then((res) => {
       if (res.data.success) setEvent(res.data.event);
@@ -113,7 +108,7 @@ export default function EventPage() {
     loadUser();
   }, [id]);
 
-  /* ---------------- COUNTDOWN ---------------- */
+  /* ---------------- Countdown ---------------- */
   useEffect(() => {
     if (!event?.date) return;
 
@@ -142,12 +137,12 @@ export default function EventPage() {
 
       setCountdown({
         label: `Starts in ${label}`,
-        isLive: diffMs <= 2 * 60 * 60 * 1000, // within 2 hours
+        isLive: diffMs <= 2 * 60 * 60 * 1000,
       });
     };
 
     updateCountdown();
-    const timer = setInterval(updateCountdown, 60000); // 1 min
+    const timer = setInterval(updateCountdown, 60000);
     return () => clearInterval(timer);
   }, [event?.date]);
 
@@ -156,12 +151,12 @@ export default function EventPage() {
   const isJoined = user && event.attendees.some((a) => a._id === user._id);
   const isHost = user && user._id === event.host._id;
 
-  /* ---------------- JOIN / LEAVE ---------------- */
+  /* ---------------- Join event ---------------- */
   const joinEvent = () => {
-    API.post(`/event/${id}/join`).then(() => loadEvent());
+    API.post(`/event/${id}/join`).then(loadEvent);
   };
 
-  /* ---------------- DELETE (HOST) ---------------- */
+  /* ---------------- Delete event ---------------- */
   const deleteEvent = () => {
     if (!window.confirm("Delete this event?")) return;
 
@@ -173,7 +168,7 @@ export default function EventPage() {
     });
   };
 
-  /* ---------------- COMMENTS ---------------- */
+  /* ---------------- Comments ---------------- */
   const submitComment = () => {
     if (!commentText.trim()) return;
     API.post(`/event/${id}/comment`, { text: commentText }).then((res) => {
@@ -186,7 +181,7 @@ export default function EventPage() {
 
   const comments = event.comments || [];
 
-  /* ---------------- SHARE ---------------- */
+  /* ---------------- Share ---------------- */
   const shareUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/event/${id}`
@@ -211,17 +206,16 @@ export default function EventPage() {
     `Join this event: ${event.title} - ${shareUrl}`
   )}`;
 
-  /* ---------------- TIME FORMAT ---------------- */
   const formatTime = (dateString) => {
     const d = new Date(dateString);
     return d.toLocaleString();
   };
 
-  /* ---------------- UI ---------------- */
+  /* =============================================================== */
+
   return (
     <DashboardLayout>
       <div style={styles.mainContainer}>
-        {/* CARD WRAPPER */}
         <div
           style={{
             background: "#0d1117",
@@ -231,7 +225,7 @@ export default function EventPage() {
             boxShadow: "0 0 0 1px rgba(1,4,9,0.5)",
           }}
         >
-          {/* BANNER (Feature A) */}
+          {/* Banner */}
           <div style={styles.bannerContainer}>
             {event.bannerImage ? (
               <img
@@ -280,7 +274,7 @@ export default function EventPage() {
               </div>
             )}
 
-            {/* GRADIENT OVERLAY */}
+            {/* Overlay */}
             <div
               style={{
                 position: "absolute",
@@ -290,7 +284,7 @@ export default function EventPage() {
               }}
             />
 
-            {/* TOP LEFT: TYPE + DATE */}
+            {/* Type + Date */}
             <div
               style={{
                 position: "absolute",
@@ -329,47 +323,46 @@ export default function EventPage() {
               </span>
             </div>
 
-            {/* BOTTOM RIGHT: COUNTDOWN (Feature B) */}
+            {/* Countdown */}
             {countdown && (
-             <div
-  style={{
-    position: "absolute",
-    right: 18,
-    bottom: 14,
-    padding: "6px 12px",
-    borderRadius: 999,
-    border: "2px solid rgba(0,0,0,0.4)", // soft black border
-    background: countdown.isLive
-      ? "rgba(0, 0, 0, 0.15)" // subtle green tint
-      : "rgba(0, 0, 0, 0.25)",    // soft dark transparent
-    color: countdown.isLive ? "#e6ffe9" : "#dcdcdc",
-    fontSize: 13,
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    backdropFilter: "blur(4px)", // premium frosted effect
-  }}
->
-  {countdown.isLive && (
-    <span
-      style={{
-        width: 8,
-        height: 8,
-        borderRadius: "50%",
-        background: "#ff4d4d",
-        boxShadow: "0 0 4px rgba(255, 77, 77, 0.7)", // softer glow
-      }}
-    />
-  )}
-  {countdown.label}
-</div>
-
+              <div
+                style={{
+                  position: "absolute",
+                  right: 18,
+                  bottom: 14,
+                  padding: "6px 12px",
+                  borderRadius: 999,
+                  border: "2px solid rgba(0,0,0,0.4)",
+                  background: countdown.isLive
+                    ? "rgba(0, 0, 0, 0.15)"
+                    : "rgba(0, 0, 0, 0.25)",
+                  color: countdown.isLive ? "#e6ffe9" : "#dcdcdc",
+                  fontSize: 13,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                {countdown.isLive && (
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "#ff4d4d",
+                      boxShadow: "0 0 4px rgba(255, 77, 77, 0.7)",
+                    }}
+                  />
+                )}
+                {countdown.label}
+              </div>
             )}
           </div>
 
-          {/* CONTENT AREA */}
+          {/* Content */}
           <div style={{ padding: "18px 20px 22px 20px" }}>
-            {/* HOST + ACTIONS */}
+            {/* Host */}
             <div style={styles.hostActions}>
               <div
                 onClick={() => navigate(`/${event.host.username}`)}
@@ -380,12 +373,10 @@ export default function EventPage() {
                   cursor: "pointer",
                 }}
               >
-
-          
-
                 <img
-                  src={event.host.photo || "https://greycat-backend.onrender.com/default-image.jpg"}
+                  src={event.host.photo || DEFAULT_AVATAR}
                   alt={event.host.username}
+                  onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                   style={{
                     width: 42,
                     height: 42,
@@ -410,14 +401,10 @@ export default function EventPage() {
                 </div>
               </div>
 
-              {/* ACTION BUTTONS (Share/Delete) */}
+              {/* Share / Delete */}
               <div style={styles.actionButtons}>
-                {/* Share (Feature F) */}
-                <button
-                  onClick={copyLink}
-                  style={styles.actionButtonBase}
-                >
-                  <span>🔗</span> Copy link
+                <button onClick={copyLink} style={styles.actionButtonBase}>
+                  🔗 Copy link
                 </button>
 
                 <a
@@ -446,7 +433,6 @@ export default function EventPage() {
                       border: "1px solid #f85149",
                       background: "#1b1516",
                       color: "#f85149",
-                      flexGrow: styles.actionButtonBase.flexGrow, // Inherit flexGrow for mobile
                     }}
                   >
                     Delete
@@ -461,7 +447,7 @@ export default function EventPage() {
               </p>
             )}
 
-            {/* STATS BAR (Feature E) */}
+            {/* Stats */}
             <div
               style={{
                 display: "flex",
@@ -486,15 +472,9 @@ export default function EventPage() {
               />
             </div>
 
-            {/* DESCRIPTION */}
+            {/* Description */}
             <div style={{ marginBottom: 22 }}>
-              <h3
-                style={{
-                  fontSize: 16,
-                  marginBottom: 8,
-                  color: "#c9d1d9",
-                }}
-              >
+              <h3 style={{ fontSize: 16, marginBottom: 8, color: "#c9d1d9" }}>
                 About this event
               </h3>
               <p
@@ -509,7 +489,7 @@ export default function EventPage() {
               </p>
             </div>
 
-            {/* JOIN / LEAVE BUTTON */}
+            {/* Join button */}
             {user && (
               <button
                 onClick={joinEvent}
@@ -524,7 +504,7 @@ export default function EventPage() {
               </button>
             )}
 
-            {/* MUTUAL / ATTENDEES (Feature C-ish) */}
+            {/* Attendees */}
             <div style={{ marginBottom: 22 }}>
               <div
                 style={{
@@ -533,13 +513,7 @@ export default function EventPage() {
                   marginBottom: 10,
                 }}
               >
-                <h3
-                  style={{
-                    fontSize: 15,
-                    margin: 0,
-                    color: "#c9d1d9",
-                  }}
-                >
+                <h3 style={{ fontSize: 15, margin: 0, color: "#c9d1d9" }}>
                   Attendees ({event.attendees.length})
                 </h3>
                 {isJoined && (
@@ -555,13 +529,7 @@ export default function EventPage() {
                 )}
               </div>
 
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: 10,
-                }}
-              >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                 {event.attendees.slice(0, 12).map((a) => (
                   <div
                     key={a._id}
@@ -577,7 +545,8 @@ export default function EventPage() {
                     title={`@${a.username}`}
                   >
                     <img
-                      src={a.photo || "https://greycat-backend.onrender.com/default-image.jpg"}
+                      src={a.photo || DEFAULT_AVATAR}
+                      onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                       alt={a.username}
                       style={{
                         width: "100%",
@@ -587,6 +556,7 @@ export default function EventPage() {
                     />
                   </div>
                 ))}
+
                 {event.attendees.length > 12 && (
                   <div
                     style={{
@@ -608,7 +578,7 @@ export default function EventPage() {
               </div>
             </div>
 
-            {/* COMMENTS (Feature D) */}
+            {/* Comments */}
             <div>
               <h3
                 style={{
@@ -630,13 +600,8 @@ export default function EventPage() {
                 }}
               >
                 {comments.length === 0 && (
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "#8b949e",
-                    }}
-                  >
-                    No comments yet. Be the first to ask something.
+                  <p style={{ fontSize: 14, color: "#8b949e" }}>
+                    No comments yet.
                   </p>
                 )}
 
@@ -653,7 +618,8 @@ export default function EventPage() {
                     }}
                   >
                     <img
-                      src={c.user?.photo || "https://greycat-backend.onrender.com/default-image.jpg"}
+                      src={c.user?.photo || DEFAULT_AVATAR}
+                      onError={(e) => (e.target.src = DEFAULT_AVATAR)}
                       alt={c.user?.username}
                       style={{
                         width: 32,
@@ -663,6 +629,7 @@ export default function EventPage() {
                         border: "1px solid #30363d",
                       }}
                     />
+
                     <div style={{ flex: 1 }}>
                       <div
                         style={{
@@ -673,7 +640,9 @@ export default function EventPage() {
                         }}
                       >
                         <span
-                          onClick={() => navigate(`/${c.user?.username || ""}`)}
+                          onClick={() =>
+                            navigate(`/${c.user?.username || ""}`)
+                          }
                           style={{
                             fontSize: 13,
                             fontWeight: 500,
@@ -683,21 +652,13 @@ export default function EventPage() {
                         >
                           @{c.user?.username}
                         </span>
-                        <span
-                          style={{
-                            fontSize: 11,
-                            color: "#8b949e",
-                          }}
-                        >
+
+                        <span style={{ fontSize: 11, color: "#8b949e" }}>
                           {new Date(c.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <div
-                        style={{
-                          fontSize: 14,
-                          color: "#b3b3b3",
-                        }}
-                      >
+
+                      <div style={{ fontSize: 14, color: "#b3b3b3" }}>
                         {c.text}
                       </div>
                     </div>
@@ -705,7 +666,7 @@ export default function EventPage() {
                 ))}
               </div>
 
-              {/* Add comment */}
+              {/* Add Comment */}
               {user && (
                 <div>
                   <textarea
@@ -725,6 +686,7 @@ export default function EventPage() {
                       marginBottom: 8,
                     }}
                   />
+
                   <button
                     onClick={submitComment}
                     style={{
@@ -750,19 +712,14 @@ export default function EventPage() {
   );
 }
 
-/* Small stat block component for the stats bar */
+/* ---------------- StatBlock ---------------- */
 function StatBlock({ label, value }) {
   return (
-    <div style={{ minWidth: 0, flex: "1 1 45%" }}> {/* Added flex property for distribution */}
-      <div
-        style={{
-          fontSize: 12,
-          color: "#8b949e",
-          marginBottom: 3,
-        }}
-      >
+    <div style={{ minWidth: 0, flex: "1 1 45%" }}>
+      <div style={{ fontSize: 12, color: "#8b949e", marginBottom: 3 }}>
         {label}
       </div>
+
       <div
         style={{
           fontSize: 14,

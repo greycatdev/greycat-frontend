@@ -2,9 +2,8 @@ import { useEffect, useState } from "react";
 import { API } from "../api";
 import { useNavigate } from "react-router-dom";
 
-const DEFAULT_PHOTO =
-  "https://greycat-backend.onrender.com/default-image.jpg";
-
+// ⭐ FIXED → No backend URL needed
+const DEFAULT_PHOTO = "/default-image.jpg";
 
 export default function EditProfile() {
   const navigate = useNavigate();
@@ -66,7 +65,6 @@ export default function EditProfile() {
         photo: res.data.user.photo || DEFAULT_PHOTO,
       };
 
-      // Update session cache
       sessionStorage.setItem("gc_user", JSON.stringify(updated));
 
       alert("Profile updated!");
@@ -96,7 +94,6 @@ export default function EditProfile() {
 
         setPhotoPreview(newPhoto);
 
-        // Update session
         const updatedUser = {
           ...user,
           photo: newPhoto,
@@ -153,6 +150,7 @@ export default function EditProfile() {
           >
             <img
               src={photoPreview || DEFAULT_PHOTO}
+              onError={(e) => (e.target.src = DEFAULT_PHOTO)}
               style={{
                 width: 100,
                 height: 100,

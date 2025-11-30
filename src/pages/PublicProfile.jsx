@@ -22,8 +22,8 @@ export default function PublicProfile() {
 
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
-  // ⭐ NEW DEFAULT AVATAR FROM BACKEND PUBLIC
-  const DEFAULT_AVATAR = "https://greycat-backend.onrender.com/default-image.jpg";
+  // ⭐ LOCAL PUBLIC FOLDER → always works
+  const DEFAULT_AVATAR = "/default-image.jpg";
 
   /* ----------------- Screen Resize Listener ----------------- */
   useEffect(() => {
@@ -35,7 +35,11 @@ export default function PublicProfile() {
   /* ---------------- Load logged-in user ---------------- */
   useEffect(() => {
     API.get("/auth/user").then((res) => {
-      if (res.data.authenticated) setLoggedInUser(res.data.user);
+      if (res.data.authenticated) {
+        const u = res.data.user;
+        u.photo = u.photo || DEFAULT_AVATAR;
+        setLoggedInUser(u);
+      }
     });
   }, []);
 
@@ -54,8 +58,6 @@ export default function PublicProfile() {
         }
 
         const user = res.data.user;
-
-        // ⭐ Always force fallback if photo missing
         user.photo = user.photo || DEFAULT_AVATAR;
 
         setProfileUser(user);

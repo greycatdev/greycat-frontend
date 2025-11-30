@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-const DEFAULT_PHOTO =
-  "https://greycat-backend.onrender.com/default-image.jpg";
-
+const DEFAULT_PHOTO = "/default-image.jpg"; // ⭐ LOCAL STATIC FILE — ALWAYS WORKS
 
 export default function Login() {
   const navigate = useNavigate();
@@ -43,12 +41,10 @@ export default function Login() {
         if (data?.authenticated) {
           const user = data.user;
 
-          // Ensure default photo
+          // Ensure avatar fallback
           if (!user.photo) user.photo = DEFAULT_PHOTO;
 
-          if (!user.username) {
-            return navigate("/set-username");
-          }
+          if (!user.username) return navigate("/set-username");
 
           return navigate("/");
         }
@@ -63,7 +59,7 @@ export default function Login() {
   }, []);
 
   /* -----------------------------------------
-     SHOW LOADING SCREEN
+     AUTH CHECK LOADING SCREEN
   ----------------------------------------- */
   if (checkingAuth) {
     return (
@@ -85,7 +81,7 @@ export default function Login() {
   }
 
   /* -----------------------------------------
-     HANDLE EMAIL LOGIN
+     EMAIL LOGIN
   ----------------------------------------- */
   const handleEmailLogin = async () => {
     if (!email || !password) {
@@ -109,14 +105,11 @@ export default function Login() {
       if (data?.success) {
         const user = data.user;
 
-        // Apply default fox pic if backend returned empty
         if (!user.photo) user.photo = DEFAULT_PHOTO;
 
-        if (!user.username) {
-          return navigate("/set-username");
-        } else {
-          return navigate("/");
-        }
+        if (!user.username) return navigate("/set-username");
+
+        return navigate("/");
       } else {
         setError(data?.message || "Login failed");
       }
@@ -128,7 +121,7 @@ export default function Login() {
   };
 
   /* -----------------------------------------
-     THEME (Dark / Light)
+     THEME
   ----------------------------------------- */
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
 

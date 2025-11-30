@@ -6,8 +6,8 @@ import { Link, useNavigate } from "react-router-dom";
 export default function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
-  // ⭐ NEW DEFAULT AVATAR
-  const DEFAULT_AVATAR = "https://greycat-backend.onrender.com/default-image.jpg";
+  // ⭐ NEW SAFE DEFAULT AVATAR (no backend URL)
+  const DEFAULT_AVATAR = "/default-image.jpg";
 
   /* ============================================
      1️⃣ USER STATE + SESSION CACHE
@@ -54,7 +54,6 @@ export default function DashboardLayout({ children }) {
     async function checkAuth() {
       try {
         const res = await API.get("/auth/user");
-
         if (!mounted) return;
 
         if (res.data.authenticated) {
@@ -94,16 +93,13 @@ export default function DashboardLayout({ children }) {
 
     searchTimeout.current = setTimeout(() => {
       API.get(`/search?q=${value}`).then((res) => {
-        // Fix user image fallback
-        const updatedResults = {
-          ...res.data,
-          users: res.data.users.map((u) => ({
-            ...u,
-            photo: u.photo || DEFAULT_AVATAR,
-          })),
-        };
+        // ⭐ ensure fallback image
+        const updatedUsers = res.data.users.map((u) => ({
+          ...u,
+          photo: u.photo || DEFAULT_AVATAR,
+        }));
 
-        setResults(updatedResults);
+        setResults({ ...res.data, users: updatedUsers });
         setVisible(true);
       });
     }, 250);
@@ -163,10 +159,9 @@ export default function DashboardLayout({ children }) {
     );
   }
 
-  // No user → no page
   if (!user) return null;
 
-  // Guaranteed fallback
+  // ⭐ Ensure guaranteed fallback
   if (!user.photo) user.photo = DEFAULT_AVATAR;
 
   /* ============================================
@@ -196,7 +191,7 @@ export default function DashboardLayout({ children }) {
             flexDirection: "column",
           }}
         >
-          {/* MOBILE SIDEBAR TOP */}
+          {/* Mobile Sidebar Top */}
           <div className="gc-mobile-sidebar-header">
             <div className="gc-brand-left">
               <img src="/icons/greycat.jpeg" className="gc-brand-logo" />
@@ -218,7 +213,7 @@ export default function DashboardLayout({ children }) {
             </button>
           </div>
 
-          {/* DESKTOP BRAND */}
+          {/* Desktop Brand */}
           <div
             className="gc-desktop-brand"
             style={{
