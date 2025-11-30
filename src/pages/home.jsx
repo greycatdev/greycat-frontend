@@ -88,7 +88,7 @@ export default function Home() {
                   }
                 >
                   <img
-                    src={post?.user?.photo || "https://greycat-backend.onrender.com/default-profile.jpg"}
+                    src={post?.user?.photo || "https://greycat-backend.onrender.com/default-image.jpg"}
                     style={{
                       width: 44,
                       height: 44,

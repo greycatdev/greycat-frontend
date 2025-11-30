@@ -3,7 +3,7 @@ import { API } from "../api";
 import { useNavigate } from "react-router-dom";
 
 const DEFAULT_PHOTO =
-  "https://greycat-backend.onrender.com/default-profile.jpg";
+  "https://greycat-backend.onrender.com/default-image.jpg";
 
 
 export default function EditProfile() {

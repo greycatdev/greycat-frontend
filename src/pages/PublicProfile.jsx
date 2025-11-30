@@ -23,7 +23,7 @@ export default function PublicProfile() {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // ⭐ NEW DEFAULT AVATAR FROM BACKEND PUBLIC
-  const DEFAULT_AVATAR = "https://greycat-backend.onrender.com/default-profile.jpg";
+  const DEFAULT_AVATAR = "https://greycat-backend.onrender.com/default-image.jpg";
 
   /* ----------------- Screen Resize Listener ----------------- */
   useEffect(() => {
